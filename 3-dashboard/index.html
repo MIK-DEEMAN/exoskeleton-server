@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finger Exoskeleton Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── Reset & Variables ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #0f0f11;
+  --surface: #1a1a1f;
+  --border:  rgba(255,255,255,0.08);
+  --text:    #f0f0f0;
+  --muted:   #888;
+  --blue:    #3b82f6;
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --yellow:  #f59e0b;
+  --purple:  #a855f7;
+  --radius:  14px;
+}
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; padding: 16px;
+}
+
+/* ── Layout ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+.header h1 { font-size: 17px; font-weight: 500; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
+@media(max-width:600px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+}
+.card-label { font-size: 11px; color: var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom: 6px; }
+.card-value { font-size: 32px; font-weight: 500; line-height: 1; }
+.card-unit  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── Status ── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; padding: 5px 12px;
+  border-radius: 99px;
+}
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-connected    { background: rgba(34,197,94,.12);  color: var(--green); }
+.status-disconnected { background: rgba(239,68,68,.12);  color: var(--red); }
+.status-connecting   { background: rgba(245,158,11,.12); color: var(--yellow); }
+.status-connected    .dot { background: var(--green); }
+.status-disconnected .dot { background: var(--red); }
+.status-connecting   .dot { background: var(--yellow); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ── ESP32 Status Bar ── */
+.esp-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-radius: 10px; margin-bottom: 12px;
+  background: var(--surface); border: 0.5px solid var(--border);
+  font-size: 13px;
+}
+
+/* ── Buttons ── */
+button {
+  padding: 10px 18px; border-radius: 10px; border: 0.5px solid var(--border);
+  background: var(--surface); cursor: pointer; font-size: 13px;
+  color: var(--text); transition: all .15s;
+}
+button:hover:not(:disabled) { background: rgba(255,255,255,.06); }
+button:disabled { opacity: .35; cursor: not-allowed; }
+.btn-primary { background: var(--blue); border-color: transparent; }
+.btn-primary:hover:not(:disabled) { background: #2563eb; }
+.btn-danger  { background: var(--red);  border-color: transparent; }
+.btn-success { background: var(--green);border-color: transparent; color: #000; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Slider ── */
+.slider-wrap { display:flex; align-items:center; gap:10px; margin: 10px 0; }
+.slider-wrap label { font-size:13px; color:var(--muted); min-width:80px; }
+input[type=range] { flex:1; accent-color: var(--blue); }
+.slider-val { font-size:16px; font-weight:500; min-width:48px; text-align:right; }
+
+/* ── Finger Grid ── */
+.finger-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
+.finger-card {
+  background: rgba(255,255,255,.04); border-radius:10px; padding:10px 6px;
+  text-align:center; border: 0.5px solid var(--border);
+}
+.finger-name { font-size:11px; color:var(--muted); margin-bottom:4px; }
+.finger-val  { font-size:18px; font-weight:500; }
+.finger-bar  { height:4px; background:rgba(255,255,255,.08); border-radius:2px; margin-top:6px; }
+.finger-fill { height:4px; background:var(--blue); border-radius:2px; transition:width .3s; }
+
+/* ── Voice ── */
+.voice-row { display:flex; align-items:center; gap:10px; }
+.mic-btn {
+  width:48px; height:48px; border-radius:50%; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; padding:0;
+}
+.mic-btn.on { background:rgba(239,68,68,.15); border-color:var(--red);
+  animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+.voice-text { font-size:13px; color:var(--muted); font-style:italic; flex:1; }
+
+/* ── Log ── */
+.log-box {
+  background: #0a0a0c; border-radius:10px; padding:10px 12px;
+  font-family:monospace; font-size:11px;
+  height:140px; overflow-y:auto; border:0.5px solid var(--border);
+}
+.log-in  { color: var(--green); }
+.log-out { color: var(--blue); }
+.log-sys { color: var(--muted); }
+.log-err { color: var(--red); }
+
+/* ── Chart ── */
+canvas { width:100%!important; max-height:150px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🖐 Finger Exoskeleton Dashboard</h1>
+  <div class="status-pill status-disconnected" id="ws-status">
+    <span class="dot"></span>
+    <span id="ws-text">Disconnected</span>
+  </div>
+</div>
+
+<!-- ESP32 Status -->
+<div class="esp-bar">
+  <span style="color:var(--muted)">ESP32 Hardware</span>
+  <div class="status-pill status-disconnected" id="esp-status">
+    <span class="dot"></span>
+    <span id="esp-text">Offline</span>
+  </div>
+</div>
+
+<!-- Sensor Cards -->
+<div class="grid-3" style="margin-bottom:12px">
+  <div class="card">
+    <div class="card-label">FSR — แรงกด</div>
+    <div class="card-value" id="val-fsr">—</div>
+    <div class="card-unit">Newton</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Flex — โค้งงอ</div>
+    <div class="card-value" id="val-flex">—</div>
+    <div class="card-unit">องศา</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Servo</div>
+    <div class="card-value" id="val-servo">0°</div>
+    <div class="card-unit" id="val-lock">ไม่ล็อก</div>
+  </div>
+</div>
+
+<!-- FSR Chart -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-label" style="margin-bottom:10px">FSR — Real-time</div>
+  <canvas id="fsr-chart"></canvas>
+</div>
+
+<!-- Finger Status -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-label" style="margin-bottom:4px">นิ้วมือ</div>
+  <div class="finger-grid" id="finger-grid">
+    <!-- จะถูกสร้างโดย JS -->
+  </div>
+</div>
+
+<!-- Motor Control -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-label" style="margin-bottom:12px">ควบคุม Servo</div>
+  <div class="slider-wrap">
+    <label>องศา</label>
+    <input type="range" id="angle-slider" min="0" max="180" value="0"
+      oninput="document.getElementById('angle-out').textContent=this.value+'°'">
+    <span class="slider-val" id="angle-out">0°</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px">
+    <label style="font-size:13px;color:var(--muted)">ล็อก</label>
+    <input type="checkbox" id="lock-check" checked style="width:16px;height:16px;accent-color:var(--blue)">
+  </div>
+  <div class="btn-row">
+    <button class="btn-primary" onclick="sendAngle()" id="btn-send" disabled>ส่ง</button>
+    <button onclick="quickCmd('open')"  id="btn-open"  disabled>เปิดนิ้ว</button>
+    <button onclick="quickCmd('close')" id="btn-close" disabled>กำมือ</button>
+    <button onclick="quickCmd('grip',50)" id="btn-grip" disabled>Grip 50%</button>
+  </div>
+</div>
+
+<!-- Voice Command -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-label" style="margin-bottom:10px">Voice Command</div>
+  <div class="voice-row">
+    <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="กดพูดคำสั่ง">🎤</button>
+    <span class="voice-text" id="voice-text">กดไมค์แล้วพูด เช่น "เปิดนิ้ว" "กำมือ" "กลาง"</span>
+  </div>
+</div>
+
+<!-- Log -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div class="card-label">WebSocket Log</div>
+    <button style="font-size:11px;padding:3px 10px" onclick="clearLog()">ล้าง</button>
+  </div>
+  <div class="log-box" id="ws-log">
+    <span class="log-sys">// รอการเชื่อมต่อ...</span>
+  </div>
+</div>
+
+<script>
+// ── CONFIG — แก้ URL ให้ตรงกับ Railway ────────────────────────
+const SERVER_URL = "wss://your-app.railway.app/dashboard"; // ← แก้หลัง deploy
+
+// ── Chart ────────────────────────────────────────────────────
+const fsrData = {
+  labels: [],
+  datasets: [{
+    label: 'FSR (N)', data: [],
+    borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)',
+    tension: 0.3, fill: true, pointRadius: 0, borderWidth: 1.5
+  }]
+};
+const chart = new Chart(document.getElementById('fsr-chart'), {
+  type: 'line', data: fsrData,
+  options: {
+    responsive: true, animation: false,
+    scales: {
+      x: { display: false },
+      y: { min: 0, max: 55, ticks: { color: '#888', font: { size: 11 } },
+           grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+
+function pushChart(val) {
+  const ts = new Date().toLocaleTimeString('th-TH', {hour12:false});
+  fsrData.labels.push(ts);
+  fsrData.datasets[0].data.push(val);
+  if (fsrData.labels.length > 60) {
+    fsrData.labels.shift();
+    fsrData.datasets[0].data.shift();
+  }
+  chart.update();
+}
+
+// ── Finger Grid ───────────────────────────────────────────────
+const FINGER_NAMES = ['นิ้วโป้ง','ชี้','กลาง','นาง','ก้อย'];
+const fingerGrid = document.getElementById('finger-grid');
+fingerGrid.innerHTML = FINGER_NAMES.map((n, i) => `
+  <div class="finger-card">
+    <div class="finger-name">${n}</div>
+    <div class="finger-val" id="f${i}">—</div>
+    <div class="finger-bar"><div class="finger-fill" id="fb${i}" style="width:0%"></div></div>
+  </div>
+`).join('');
+
+function updateFingers(arr) {
+  if (!arr) return;
+  arr.forEach((v, i) => {
+    const el = document.getElementById('f' + i);
+    const bar = document.getElementById('fb' + i);
+    if (el)  el.textContent = v + '°';
+    if (bar) bar.style.width = Math.min(100, (v / 180) * 100) + '%';
+  });
+}
+
+// ── Log ──────────────────────────────────────────────────────
+function log(msg, cls = 'log-sys') {
+  const el = document.getElementById('ws-log');
+  const ts = new Date().toLocaleTimeString('th-TH', {hour12:false});
+  el.innerHTML += `\n<span class="${cls}">[${ts}] ${msg}</span>`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('ws-log').innerHTML = '<span class="log-sys">// cleared</span>';
+}
+
+// ── Status Pills ──────────────────────────────────────────────
+function setWsStatus(s) {
+  const el = document.getElementById('ws-status');
+  const tx = document.getElementById('ws-text');
+  el.className = 'status-pill status-' + s;
+  tx.textContent = s === 'connected' ? 'Server Connected'
+                 : s === 'connecting' ? 'Connecting…' : 'Disconnected';
+}
+function setEspStatus(s) {
+  const el = document.getElementById('esp-status');
+  const tx = document.getElementById('esp-text');
+  el.className = 'status-pill status-' + s;
+  tx.textContent = s === 'connected' ? 'Online' : 'Offline';
+}
+function setButtons(en) {
+  ['btn-send','btn-open','btn-close','btn-grip']
+    .forEach(id => document.getElementById(id).disabled = !en);
+}
+
+// ── WebSocket ─────────────────────────────────────────────────
+let ws;
+function connect() {
+  setWsStatus('connecting');
+  log('→ Connecting to server...');
+  ws = new WebSocket(SERVER_URL);
+
+  ws.onopen = () => {
+    setWsStatus('connected');
+    log('✓ Server connected', 'log-in');
+  };
+
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    handleMessage(data);
+    log(`← ${e.data.slice(0, 80)}`, 'log-in');
+  };
+
+  ws.onclose = () => {
+    setWsStatus('disconnected');
+    setEspStatus('disconnected');
+    setButtons(false);
+    log('✕ Disconnected — reconnecting...', 'log-err');
+    setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => log('✕ Connection error', 'log-err');
+}
+
+// ── Handle Message จาก Server ────────────────────────────────
+function handleMessage(data) {
+  if (data.type === 'sensor_data') {
+    document.getElementById('val-fsr').textContent   = (+data.fsr).toFixed(1);
+    document.getElementById('val-flex').textContent  = data.flex;
+    document.getElementById('val-servo').textContent = data.servo + '°';
+    document.getElementById('val-lock').textContent  = data.lock ? '🔒 ล็อก' : 'ปลดล็อก';
+    pushChart(+data.fsr);
+    if (data.finger) updateFingers(data.finger);
+    setButtons(true);
+  }
+  if (data.type === 'esp32_status') {
+    const online = data.status === 'connected';
+    setEspStatus(online ? 'connected' : 'disconnected');
+    if (!online) setButtons(false);
+    log(`ESP32 ${online ? 'Online' : 'Offline'}`, online ? 'log-in' : 'log-err');
+  }
+  if (data.type === 'error') {
+    log('✕ ' + data.message, 'log-err');
+  }
+}
+
+// ── Send Command ──────────────────────────────────────────────
+function send(data) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const msg = JSON.stringify(data);
+  ws.send(msg);
+  log(`→ ${msg}`, 'log-out');
+}
+
+function sendAngle() {
+  const angle = parseInt(document.getElementById('angle-slider').value);
+  const lock  = document.getElementById('lock-check').checked;
+  send({ type: 'command', action: 'angle', angle, lock });
+}
+
+function quickCmd(action, intensity = 100) {
+  send({ type: 'command', action, intensity });
+}
+
+// ── Voice Command ─────────────────────────────────────────────
+let recognition, isListening = false;
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('ใช้ Chrome เพื่อรองรับ Voice Command');
+    return;
+  }
+  if (isListening) { recognition?.stop(); return; }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'th-TH';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('mic-btn').classList.add('on');
+    document.getElementById('voice-text').textContent = '🎙 กำลังฟัง...';
+  };
+
+  recognition.onresult = (e) => {
+    let t = '';
+    for (let i = e.resultIndex; i < e.results.length; i++)
+      t = e.results[i][0].transcript;
+    document.getElementById('voice-text').textContent = `"${t}"`;
+
+    if (e.results[e.resultIndex].isFinal) {
+      send({ type: 'voice', text: t });
+      log(`🎤 "${t}"`, 'log-out');
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('on');
+  };
+
+  recognition.start();
+}
+
+// ── Start ─────────────────────────────────────────────────────
+connect();
+</script>
+</body>
+</html>
