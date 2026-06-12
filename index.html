@@ -96,7 +96,7 @@ body {
   background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
   transition: width .12s linear; }
 
-/* ── Gauge & Finger visual ── */
+/* ── Gauges ── */
 .visual-wrap { display: flex; align-items: center; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
 .visual-box  { text-align: center; }
 .visual-box svg { display: block; margin: 0 auto; }
@@ -165,7 +165,7 @@ input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
 .log-err { color: var(--red); }
 
 /* ── Chart ── */
-.chart-box { position: relative; height: 180px; }
+.chart-box { position: relative; height: 160px; }
 canvas { width: 100% !important; }
 
 /* ── Footer rate ── */
@@ -178,7 +178,7 @@ canvas { width: 100% !important; }
 <!-- ═══ Header ═══ -->
 <div class="header">
   <div>
-    <h1>🖐 Finger Exoskeleton</h1>
+    <h1>Finger Exoskeleton</h1>
     <div class="sub">ESP32 · Railway WebSocket · Real-time</div>
   </div>
   <div class="pills">
@@ -191,7 +191,7 @@ canvas { width: 100% !important; }
   </div>
 </div>
 
-<!-- ═══ Hero: Servo Gauge + Finger Visual ═══ -->
+<!-- ═══ Hero: Servo Gauge + Flex Gauge ═══ -->
 <div class="grid grid-hero">
   <div class="card">
     <div class="meta-row">
@@ -199,44 +199,48 @@ canvas { width: 100% !important; }
       <div class="rate-tag" id="rate-tag">— Hz</div>
     </div>
     <div class="visual-wrap">
-      <!-- Servo Gauge -->
+      <!-- Servo Gauge (0–180°) -->
       <div class="visual-box">
         <svg width="170" height="110" viewBox="0 0 200 120">
           <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
                 stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
-          <path id="gauge-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
-                stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"
+          <path id="servo-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+                stroke="url(#servoGrad)" stroke-width="12" stroke-linecap="round"
                 stroke-dasharray="235.6" stroke-dashoffset="235.6"/>
           <defs>
-            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id="servoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%"  stop-color="#4f8cff"/>
               <stop offset="100%" stop-color="#a78bfa"/>
             </linearGradient>
+            <linearGradient id="flexGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"  stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#34d399"/>
+            </linearGradient>
           </defs>
-          <line id="gauge-needle" x1="100" y1="105" x2="100" y2="45"
+          <line id="servo-needle" x1="100" y1="105" x2="100" y2="45"
                 stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
                 transform="rotate(-90 100 105)"/>
           <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
-          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="gauge-text">0°</text>
+          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="servo-text">0°</text>
         </svg>
-        <div class="visual-cap">Servo Motor</div>
-        <div class="lock-badge lock-off" id="lock-badge">○ ปลดล็อก</div>
+        <div class="visual-cap">Servo Motor (0–180°)</div>
+        <div class="lock-badge lock-off" id="lock-badge">ปลดล็อก</div>
       </div>
-      <!-- Finger bend visual -->
+      <!-- Flex Gauge (0–90°) -->
       <div class="visual-box">
-        <svg width="160" height="110" viewBox="0 0 200 140">
-          <rect x="8" y="40" width="52" height="56" rx="13" fill="rgba(255,255,255,0.10)"/>
-          <g id="seg1" transform="rotate(0 60 56)">
-            <rect x="58" y="44" width="56" height="24" rx="12" fill="#4f8cff"/>
-            <g id="seg2" transform="rotate(0 112 56)">
-              <rect x="110" y="45" width="44" height="22" rx="11" fill="#6ea0ff"/>
-              <g id="seg3" transform="rotate(0 152 56)">
-                <rect x="150" y="46" width="36" height="20" rx="10" fill="#9bbcff"/>
-              </g>
-            </g>
-          </g>
+        <svg width="170" height="110" viewBox="0 0 200 120">
+          <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+                stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
+          <path id="flex-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+                stroke="url(#flexGrad)" stroke-width="12" stroke-linecap="round"
+                stroke-dasharray="235.6" stroke-dashoffset="235.6"/>
+          <line id="flex-needle" x1="100" y1="105" x2="100" y2="45"
+                stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
+                transform="rotate(-90 100 105)"/>
+          <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
+          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="flex-text">0°</text>
         </svg>
-        <div class="visual-cap">มุมงอนิ้ว — <b id="finger-deg" style="color:var(--cyan)">0°</b></div>
+        <div class="visual-cap">Flex — มุมงอนิ้ว (0–90°)</div>
       </div>
     </div>
   </div>
@@ -267,13 +271,19 @@ canvas { width: 100% !important; }
   </div>
 </div>
 
-<!-- ═══ Real-time Chart ═══ -->
-<div class="card" style="margin-bottom:12px">
-  <div class="meta-row" style="margin-bottom:10px">
-    <div class="card-label" style="margin:0">กราฟ Real-time — FSR + Flex</div>
-    <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">⏸ หยุด</button>
+<!-- ═══ Real-time Charts (แยก FSR / Flex) ═══ -->
+<div class="grid grid-two">
+  <div class="card">
+    <div class="meta-row" style="margin-bottom:10px">
+      <div class="card-label" style="margin:0">FSR — แรงกด (N)</div>
+      <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">หยุด</button>
+    </div>
+    <div class="chart-box"><canvas id="fsr-chart"></canvas></div>
   </div>
-  <div class="chart-box"><canvas id="rt-chart"></canvas></div>
+  <div class="card">
+    <div class="card-label" style="margin-bottom:10px">Flex — มุมงอนิ้ว (°)</div>
+    <div class="chart-box"><canvas id="flex-chart"></canvas></div>
+  </div>
 </div>
 
 <!-- ═══ Controls + Voice ═══ -->
@@ -292,8 +302,8 @@ canvas { width: 100% !important; }
     </div>
     <div class="btn-row">
       <button class="btn-primary" onclick="sendAngle()" id="btn-send" disabled>ส่งมุม</button>
-      <button class="btn-open"  onclick="quickCmd('open')"  id="btn-open"  disabled>✋ เปิดนิ้ว</button>
-      <button class="btn-close" onclick="quickCmd('close')" id="btn-close" disabled>✊ กำมือ</button>
+      <button class="btn-open"  onclick="quickCmd('open')"  id="btn-open"  disabled>เปิดนิ้ว</button>
+      <button class="btn-close" onclick="quickCmd('close')" id="btn-close" disabled>กำมือ</button>
       <button onclick="quickCmd('grip',50)"  id="btn-grip50"  disabled>Grip 50%</button>
       <button onclick="quickCmd('grip',100)" id="btn-grip100" disabled>Grip 100%</button>
     </div>
@@ -324,76 +334,71 @@ canvas { width: 100% !important; }
 // ── CONFIG — แก้ URL ให้ตรงกับ Railway ────────────────────────
 const SERVER_URL = "wss://exoskeleton-server-production.up.railway.app/dashboard"; // ← Railway production
 
-// ── Real-time Chart (FSR + Flex สองแกน) ──────────────────────
+// ── Real-time Charts (แยก FSR / Flex) ─────────────────────────
 const MAX_POINTS = 80;
-const rtData = {
-  labels: [],
-  datasets: [
-    { label: 'FSR (N)', data: [], yAxisID: 'yF',
-      borderColor: '#4f8cff', backgroundColor: 'rgba(79,140,255,0.07)',
-      tension: 0.35, fill: true, pointRadius: 0, borderWidth: 1.6 },
-    { label: 'Flex (°)', data: [], yAxisID: 'yX',
-      borderColor: '#22d3ee', backgroundColor: 'transparent',
-      tension: 0.35, fill: false, pointRadius: 0, borderWidth: 1.6, borderDash: [5,3] },
-  ]
-};
-const chart = new Chart(document.getElementById('rt-chart'), {
-  type: 'line', data: rtData,
-  options: {
-    responsive: true, maintainAspectRatio: false, animation: false,
-    interaction: { intersect: false, mode: 'index' },
-    scales: {
-      x:  { display: false },
-      yF: { min: 0, max: 55, position: 'left',
-            ticks: { color: '#4f8cff', font: { size: 10 } },
-            grid: { color: 'rgba(255,255,255,0.05)' } },
-      yX: { min: 0, max: 95, position: 'right',
-            ticks: { color: '#22d3ee', font: { size: 10 } },
-            grid: { display: false } },
+
+function makeChart(canvasId, label, color, bgColor, yMax) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label, data: [],
+        borderColor: color, backgroundColor: bgColor,
+        tension: 0.35, fill: true, pointRadius: 0, borderWidth: 1.6
+      }]
     },
-    plugins: { legend: { labels: { color: '#8a8f9c', font: { size: 11 }, boxWidth: 18 } } }
-  }
-});
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { intersect: false, mode: 'index' },
+      scales: {
+        x: { display: false },
+        y: { min: 0, max: yMax,
+             ticks: { color: '#8a8f9c', font: { size: 10 } },
+             grid: { color: 'rgba(255,255,255,0.05)' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+const fsrChart  = makeChart('fsr-chart',  'FSR (N)',  '#4f8cff', 'rgba(79,140,255,0.07)', 50);
+const flexChart = makeChart('flex-chart', 'Flex (°)', '#22d3ee', 'rgba(34,211,238,0.07)', 90);
 
 let paused = false;
 function togglePause() {
   paused = !paused;
-  document.getElementById('btn-pause').textContent = paused ? '▶ เล่นต่อ' : '⏸ หยุด';
+  document.getElementById('btn-pause').textContent = paused ? 'เล่นต่อ' : 'หยุด';
 }
-function pushChart(fsr, flex) {
-  if (paused) return;
-  const ts = new Date().toLocaleTimeString('th-TH', { hour12: false });
-  rtData.labels.push(ts);
-  rtData.datasets[0].data.push(fsr);
-  rtData.datasets[1].data.push(flex);
-  if (rtData.labels.length > MAX_POINTS) {
-    rtData.labels.shift();
-    rtData.datasets.forEach(d => d.data.shift());
+function pushPoint(chart, val) {
+  const d = chart.data;
+  d.labels.push('');
+  d.datasets[0].data.push(val);
+  if (d.labels.length > MAX_POINTS) {
+    d.labels.shift();
+    d.datasets[0].data.shift();
   }
   chart.update('none');
 }
-
-// ── Servo Gauge + Finger Visual ───────────────────────────────
-const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
-function updateGauge(angle) {
-  const ratio = Math.min(180, Math.max(0, angle)) / 180;
-  document.getElementById('gauge-arc').setAttribute('stroke-dashoffset', ARC_LEN * (1 - ratio));
-  document.getElementById('gauge-needle').setAttribute('transform',
-    `rotate(${-90 + ratio * 180} 100 105)`);
-  document.getElementById('gauge-text').textContent = angle + '°';
+function pushCharts(fsr, flex) {
+  if (paused) return;
+  pushPoint(fsrChart, fsr);
+  pushPoint(flexChart, flex);
 }
-function updateFinger(flexDeg) {
-  // กระจายมุมงอ 0–90° ไป 3 ข้อนิ้ว ข้อละสูงสุด 30°
-  const per = Math.min(90, Math.max(0, flexDeg)) / 3;
-  document.getElementById('seg1').setAttribute('transform', `rotate(${per} 60 56)`);
-  document.getElementById('seg2').setAttribute('transform', `rotate(${per} 112 56)`);
-  document.getElementById('seg3').setAttribute('transform', `rotate(${per} 152 56)`);
-  document.getElementById('finger-deg').textContent = flexDeg + '°';
+
+// ── Gauges (Servo 0–180° / Flex 0–90°) ───────────────────────
+const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
+function setGauge(prefix, value, max) {
+  const ratio = Math.min(max, Math.max(0, value)) / max;
+  document.getElementById(prefix + '-arc').setAttribute('stroke-dashoffset', ARC_LEN * (1 - ratio));
+  document.getElementById(prefix + '-needle').setAttribute('transform',
+    `rotate(${-90 + ratio * 180} 100 105)`);
+  document.getElementById(prefix + '-text').textContent = value + '°';
 }
 function updateLock(locked) {
   const el = document.getElementById('lock-badge');
   el.className = 'lock-badge ' + (locked ? 'lock-on' : 'lock-off');
-  el.textContent = locked ? '🔒 ล็อกอยู่' : '○ ปลดล็อก';
+  el.textContent = locked ? 'ล็อกอยู่' : 'ปลดล็อก';
 }
 
 // ── Packet rate + ความสดของข้อมูล ─────────────────────────────
@@ -401,11 +406,10 @@ let pktCount = 0, pktWindow = 0, lastPktTime = 0;
 setInterval(() => {
   document.getElementById('rate-tag').textContent = pktWindow + ' Hz';
   pktWindow = 0;
-  // อายุข้อมูลล่าสุด
   const ageEl = document.getElementById('val-age');
   if (!lastPktTime) { ageEl.textContent = '—'; return; }
   const sec = (Date.now() - lastPktTime) / 1000;
-  ageEl.textContent = sec < 1.5 ? 'สด ✓' : sec.toFixed(0) + ' วิ.ก่อน';
+  ageEl.textContent = sec < 1.5 ? 'สด' : sec.toFixed(0) + ' วิ.ก่อน';
   ageEl.style.color = sec < 3 ? 'var(--green)' : 'var(--yellow)';
 }, 1000);
 
@@ -424,12 +428,12 @@ function clearLog() {
 function setWsStatus(s) {
   const el = document.getElementById('ws-status');
   document.getElementById('ws-text').textContent =
-    s === 'connected' ? 'Server ✓' : s === 'connecting' ? 'Server…' : 'Server ✕';
+    s === 'connected' ? 'Server: Online' : s === 'connecting' ? 'Server: กำลังเชื่อมต่อ' : 'Server: Offline';
   el.className = 'status-pill status-' + s;
 }
 function setEspStatus(online) {
   const el = document.getElementById('esp-status');
-  document.getElementById('esp-text').textContent = online ? 'ESP32 ✓' : 'ESP32 ✕';
+  document.getElementById('esp-text').textContent = online ? 'ESP32: Online' : 'ESP32: Offline';
   el.className = 'status-pill status-' + (online ? 'connected' : 'disconnected');
   setButtons(online);
 }
@@ -445,7 +449,7 @@ function connect() {
   log('→ Connecting to server...');
   ws = new WebSocket(SERVER_URL);
 
-  ws.onopen = () => { setWsStatus('connected'); log('✓ Server connected', 'log-in'); };
+  ws.onopen = () => { setWsStatus('connected'); log('Server connected', 'log-in'); };
 
   ws.onmessage = (e) => {
     let data;
@@ -457,11 +461,11 @@ function connect() {
   ws.onclose = () => {
     setWsStatus('disconnected');
     setEspStatus(false);
-    log('✕ Disconnected — reconnecting in 3s...', 'log-err');
+    log('Disconnected — reconnecting in 3s...', 'log-err');
     setTimeout(connect, 3000);
   };
 
-  ws.onerror = () => log('✕ Connection error', 'log-err');
+  ws.onerror = () => log('Connection error', 'log-err');
 }
 
 // ── Handle Message จาก Server ────────────────────────────────
@@ -479,22 +483,22 @@ function handleMessage(data) {
     document.getElementById('val-mic').textContent  = Math.round((mic / 4095) * 100) + '%';
     document.getElementById('mic-bar').style.width  = (mic / 4095) * 100 + '%';
 
-    updateGauge(+data.servo || 0);
-    updateFinger(flex);
+    setGauge('servo', +data.servo || 0, 180);
+    setGauge('flex',  flex, 90);
     updateLock(!!data.lock);
-    pushChart(fsr, flex);
+    pushCharts(fsr, flex);
     setButtons(true);
   }
   else if (data.type === 'esp32_status') {
     const online = data.status === 'connected';
     setEspStatus(online);
-    log(`ESP32 ${online ? 'Online ✓' : 'Offline ✕'}`, online ? 'log-in' : 'log-err');
+    log(`ESP32 ${online ? 'Online' : 'Offline'}`, online ? 'log-in' : 'log-err');
   }
   else if (data.type === 'hello') {
-    log(`👋 ${data.device || 'ESP32'} v${data.version || '?'} เชื่อมต่อแล้ว`, 'log-in');
+    log(`${data.device || 'ESP32'} v${data.version || '?'} เชื่อมต่อแล้ว`, 'log-in');
   }
   else if (data.type === 'error') {
-    log('✕ ' + data.message, 'log-err');
+    log(data.message, 'log-err');
   }
 }
 
@@ -543,7 +547,7 @@ function toggleVoice() {
 
     if (e.results[e.resultIndex].isFinal) {
       send({ type: 'voice', text: t });
-      log(`🎤 "${t}"`, 'log-out');
+      log(`[เสียง] "${t}"`, 'log-out');
     }
   };
 
