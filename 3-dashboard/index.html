@@ -9,115 +9,155 @@
 /* ── Reset & Variables ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:      #0f0f11;
-  --surface: #1a1a1f;
-  --border:  rgba(255,255,255,0.08);
-  --text:    #f0f0f0;
-  --muted:   #888;
-  --blue:    #3b82f6;
-  --green:   #22c55e;
-  --red:     #ef4444;
-  --yellow:  #f59e0b;
-  --purple:  #a855f7;
-  --radius:  14px;
+  --bg:       #0b0c10;
+  --surface:  #15171e;
+  --surface2: #1c1f28;
+  --border:   rgba(255,255,255,0.07);
+  --text:     #eef0f4;
+  --muted:    #8a8f9c;
+  --blue:     #4f8cff;
+  --cyan:     #22d3ee;
+  --green:    #34d399;
+  --red:      #f87171;
+  --yellow:   #fbbf24;
+  --purple:   #a78bfa;
+  --radius:   16px;
 }
+html { scroll-behavior: smooth; }
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: var(--bg); color: var(--text);
-  min-height: 100vh; padding: 16px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 500px at 80% -10%, rgba(79,140,255,.08), transparent 60%),
+    radial-gradient(900px 400px at 0% 110%, rgba(167,139,250,.06), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 14px;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-/* ── Layout ── */
+/* ── Header ── */
 .header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; padding-bottom: 12px;
-  border-bottom: 0.5px solid var(--border);
+  flex-wrap: wrap; gap: 10px;
+  margin-bottom: 14px; padding: 14px 16px;
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius);
 }
-.header h1 { font-size: 17px; font-weight: 500; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
-@media(max-width:600px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+.header h1 { font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+.header .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Status Pills ── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 600; padding: 6px 12px;
+  border-radius: 99px; border: 0.5px solid var(--border);
+}
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-connected    { background: rgba(52,211,153,.10);  color: var(--green); }
+.status-disconnected { background: rgba(248,113,113,.10); color: var(--red); }
+.status-connecting   { background: rgba(251,191,36,.10);  color: var(--yellow); }
+.status-connected    .dot { background: var(--green); box-shadow: 0 0 8px rgba(52,211,153,.8); }
+.status-disconnected .dot { background: var(--red); }
+.status-connecting   .dot { background: var(--yellow); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ── Layout Grid ── */
+.grid { display: grid; gap: 12px; margin-bottom: 12px; }
+.grid-hero  { grid-template-columns: 1.1fr 1fr; }
+.grid-stats { grid-template-columns: repeat(4, 1fr); }
+.grid-two   { grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) {
+  .grid-hero, .grid-two { grid-template-columns: 1fr; }
+  .grid-stats { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* ── Cards ── */
 .card {
   background: var(--surface); border: 0.5px solid var(--border);
   border-radius: var(--radius); padding: 16px;
 }
-.card-label { font-size: 11px; color: var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom: 6px; }
-.card-value { font-size: 32px; font-weight: 500; line-height: 1; }
-.card-unit  { font-size: 12px; color: var(--muted); margin-top: 4px; }
-
-/* ── Status ── */
-.status-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 500; padding: 5px 12px;
-  border-radius: 99px;
+.card-label {
+  font-size: 11px; color: var(--muted); letter-spacing: .06em;
+  text-transform: uppercase; margin-bottom: 8px; font-weight: 600;
 }
-.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
-.status-connected    { background: rgba(34,197,94,.12);  color: var(--green); }
-.status-disconnected { background: rgba(239,68,68,.12);  color: var(--red); }
-.status-connecting   { background: rgba(245,158,11,.12); color: var(--yellow); }
-.status-connected    .dot { background: var(--green); }
-.status-disconnected .dot { background: var(--red); }
-.status-connecting   .dot { background: var(--yellow); animation: blink 1s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+.stat-value { font-size: 30px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat-unit  { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.stat-accent-blue   .stat-value { color: var(--blue); }
+.stat-accent-cyan   .stat-value { color: var(--cyan); }
+.stat-accent-purple .stat-value { color: var(--purple); }
+.stat-accent-green  .stat-value { color: var(--green); }
 
-/* ── ESP32 Status Bar ── */
-.esp-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-radius: 10px; margin-bottom: 12px;
-  background: var(--surface); border: 0.5px solid var(--border);
-  font-size: 13px;
+/* ── Mic level bar ── */
+.level-bar  { height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.level-fill { height: 100%; width: 0%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+  transition: width .12s linear; }
+
+/* ── Gauge & Finger visual ── */
+.visual-wrap { display: flex; align-items: center; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
+.visual-box  { text-align: center; }
+.visual-box svg { display: block; margin: 0 auto; }
+.visual-cap  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.gauge-val   { font-size: 22px; font-weight: 600; fill: var(--text); }
+.lock-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 99px;
+  margin-top: 8px; border: 0.5px solid var(--border);
 }
+.lock-on  { background: rgba(251,191,36,.10); color: var(--yellow); }
+.lock-off { background: rgba(255,255,255,.04); color: var(--muted); }
 
 /* ── Buttons ── */
 button {
-  padding: 10px 18px; border-radius: 10px; border: 0.5px solid var(--border);
-  background: var(--surface); cursor: pointer; font-size: 13px;
-  color: var(--text); transition: all .15s;
+  padding: 10px 16px; border-radius: 11px; border: 0.5px solid var(--border);
+  background: var(--surface2); cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--text); transition: transform .1s, background .15s, opacity .15s;
+  font-family: inherit;
 }
-button:hover:not(:disabled) { background: rgba(255,255,255,.06); }
-button:disabled { opacity: .35; cursor: not-allowed; }
+button:hover:not(:disabled) { background: rgba(255,255,255,.08); }
+button:active:not(:disabled) { transform: scale(.97); }
+button:disabled { opacity: .32; cursor: not-allowed; }
 .btn-primary { background: var(--blue); border-color: transparent; }
-.btn-primary:hover:not(:disabled) { background: #2563eb; }
-.btn-danger  { background: var(--red);  border-color: transparent; }
-.btn-success { background: var(--green);border-color: transparent; color: #000; }
+.btn-primary:hover:not(:disabled) { background: #3b78f0; }
+.btn-open  { background: rgba(52,211,153,.13); color: var(--green); border-color: rgba(52,211,153,.25); }
+.btn-close { background: rgba(248,113,113,.13); color: var(--red);  border-color: rgba(248,113,113,.25); }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ── Slider ── */
-.slider-wrap { display:flex; align-items:center; gap:10px; margin: 10px 0; }
-.slider-wrap label { font-size:13px; color:var(--muted); min-width:80px; }
-input[type=range] { flex:1; accent-color: var(--blue); }
-.slider-val { font-size:16px; font-weight:500; min-width:48px; text-align:right; }
-
-/* ── Finger Grid ── */
-.finger-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
-.finger-card {
-  background: rgba(255,255,255,.04); border-radius:10px; padding:10px 6px;
-  text-align:center; border: 0.5px solid var(--border);
-}
-.finger-name { font-size:11px; color:var(--muted); margin-bottom:4px; }
-.finger-val  { font-size:18px; font-weight:500; }
-.finger-bar  { height:4px; background:rgba(255,255,255,.08); border-radius:2px; margin-top:6px; }
-.finger-fill { height:4px; background:var(--blue); border-radius:2px; transition:width .3s; }
+.slider-wrap { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.slider-wrap label { font-size: 12.5px; color: var(--muted); min-width: 42px; }
+input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
+.slider-val { font-size: 17px; font-weight: 600; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+.lock-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.lock-row label { font-size: 12.5px; color: var(--muted); }
+.lock-row input { width: 16px; height: 16px; accent-color: var(--blue); }
 
 /* ── Voice ── */
-.voice-row { display:flex; align-items:center; gap:10px; }
+.voice-row { display: flex; align-items: center; gap: 12px; }
 .mic-btn {
-  width:48px; height:48px; border-radius:50%; font-size:22px;
-  display:flex; align-items:center; justify-content:center;
-  flex-shrink:0; padding:0;
+  width: 52px; height: 52px; border-radius: 50%; font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0;
 }
-.mic-btn.on { background:rgba(239,68,68,.15); border-color:var(--red);
+.mic-btn.on { background: rgba(248,113,113,.16); border-color: var(--red);
   animation: pulse 1.2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
-.voice-text { font-size:13px; color:var(--muted); font-style:italic; flex:1; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.voice-text { font-size: 13px; color: var(--muted); font-style: italic; flex: 1; line-height: 1.5; }
+.voice-hints { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.voice-hints span {
+  font-size: 11px; color: var(--muted); padding: 3px 10px;
+  background: rgba(255,255,255,.04); border-radius: 99px; border: 0.5px solid var(--border);
+}
 
 /* ── Log ── */
 .log-box {
-  background: #0a0a0c; border-radius:10px; padding:10px 12px;
-  font-family:monospace; font-size:11px;
-  height:140px; overflow-y:auto; border:0.5px solid var(--border);
+  background: #07080b; border-radius: 11px; padding: 10px 12px;
+  font-family: Consolas, monospace; font-size: 11px; line-height: 1.7;
+  height: 150px; overflow-y: auto; border: 0.5px solid var(--border);
+  white-space: pre-wrap; word-break: break-all;
 }
 .log-in  { color: var(--green); }
 .log-out { color: var(--blue); }
@@ -125,165 +165,254 @@ input[type=range] { flex:1; accent-color: var(--blue); }
 .log-err { color: var(--red); }
 
 /* ── Chart ── */
-canvas { width:100%!important; max-height:150px; }
+.chart-box { position: relative; height: 180px; }
+canvas { width: 100% !important; }
+
+/* ── Footer rate ── */
+.meta-row { display: flex; justify-content: space-between; align-items: center; }
+.rate-tag { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- ═══ Header ═══ -->
 <div class="header">
-  <h1>🖐 Finger Exoskeleton Dashboard</h1>
-  <div class="status-pill status-disconnected" id="ws-status">
-    <span class="dot"></span>
-    <span id="ws-text">Disconnected</span>
+  <div>
+    <h1>🖐 Finger Exoskeleton</h1>
+    <div class="sub">ESP32 · Railway WebSocket · Real-time</div>
+  </div>
+  <div class="pills">
+    <div class="status-pill status-disconnected" id="ws-status">
+      <span class="dot"></span><span id="ws-text">Server</span>
+    </div>
+    <div class="status-pill status-disconnected" id="esp-status">
+      <span class="dot"></span><span id="esp-text">ESP32</span>
+    </div>
   </div>
 </div>
 
-<!-- ESP32 Status -->
-<div class="esp-bar">
-  <span style="color:var(--muted)">ESP32 Hardware</span>
-  <div class="status-pill status-disconnected" id="esp-status">
-    <span class="dot"></span>
-    <span id="esp-text">Offline</span>
-  </div>
-</div>
-
-<!-- Sensor Cards -->
-<div class="grid-3" style="margin-bottom:12px">
+<!-- ═══ Hero: Servo Gauge + Finger Visual ═══ -->
+<div class="grid grid-hero">
   <div class="card">
-    <div class="card-label">FSR — แรงกด</div>
-    <div class="card-value" id="val-fsr">—</div>
-    <div class="card-unit">Newton</div>
+    <div class="meta-row">
+      <div class="card-label">สถานะอุปกรณ์</div>
+      <div class="rate-tag" id="rate-tag">— Hz</div>
+    </div>
+    <div class="visual-wrap">
+      <!-- Servo Gauge -->
+      <div class="visual-box">
+        <svg width="170" height="110" viewBox="0 0 200 120">
+          <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+                stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
+          <path id="gauge-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+                stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"
+                stroke-dasharray="235.6" stroke-dashoffset="235.6"/>
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"  stop-color="#4f8cff"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+          <line id="gauge-needle" x1="100" y1="105" x2="100" y2="45"
+                stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
+                transform="rotate(-90 100 105)"/>
+          <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
+          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="gauge-text">0°</text>
+        </svg>
+        <div class="visual-cap">Servo Motor</div>
+        <div class="lock-badge lock-off" id="lock-badge">○ ปลดล็อก</div>
+      </div>
+      <!-- Finger bend visual -->
+      <div class="visual-box">
+        <svg width="160" height="110" viewBox="0 0 200 140">
+          <rect x="8" y="40" width="52" height="56" rx="13" fill="rgba(255,255,255,0.10)"/>
+          <g id="seg1" transform="rotate(0 60 56)">
+            <rect x="58" y="44" width="56" height="24" rx="12" fill="#4f8cff"/>
+            <g id="seg2" transform="rotate(0 112 56)">
+              <rect x="110" y="45" width="44" height="22" rx="11" fill="#6ea0ff"/>
+              <g id="seg3" transform="rotate(0 152 56)">
+                <rect x="150" y="46" width="36" height="20" rx="10" fill="#9bbcff"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <div class="visual-cap">มุมงอนิ้ว — <b id="finger-deg" style="color:var(--cyan)">0°</b></div>
+      </div>
+    </div>
   </div>
+
+  <!-- ═══ Stats ═══ -->
+  <div class="grid grid-stats" style="margin-bottom:0">
+    <div class="card stat-accent-blue">
+      <div class="card-label">FSR แรงกด</div>
+      <div class="stat-value" id="val-fsr">—</div>
+      <div class="stat-unit">Newton (0–50)</div>
+    </div>
+    <div class="card stat-accent-cyan">
+      <div class="card-label">Flex โค้งงอ</div>
+      <div class="stat-value" id="val-flex">—</div>
+      <div class="stat-unit">องศา (0–90)</div>
+    </div>
+    <div class="card stat-accent-purple">
+      <div class="card-label">เสียง (Mic)</div>
+      <div class="stat-value" id="val-mic">—</div>
+      <div class="stat-unit">ระดับสัญญาณ</div>
+      <div class="level-bar"><div class="level-fill" id="mic-bar"></div></div>
+    </div>
+    <div class="card stat-accent-green">
+      <div class="card-label">อัปเดตล่าสุด</div>
+      <div class="stat-value" id="val-age" style="font-size:24px">—</div>
+      <div class="stat-unit" id="val-pkts">0 แพ็กเก็ต</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Real-time Chart ═══ -->
+<div class="card" style="margin-bottom:12px">
+  <div class="meta-row" style="margin-bottom:10px">
+    <div class="card-label" style="margin:0">กราฟ Real-time — FSR + Flex</div>
+    <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">⏸ หยุด</button>
+  </div>
+  <div class="chart-box"><canvas id="rt-chart"></canvas></div>
+</div>
+
+<!-- ═══ Controls + Voice ═══ -->
+<div class="grid grid-two">
   <div class="card">
-    <div class="card-label">Flex — โค้งงอ</div>
-    <div class="card-value" id="val-flex">—</div>
-    <div class="card-unit">องศา</div>
+    <div class="card-label" style="margin-bottom:12px">ควบคุม Servo</div>
+    <div class="slider-wrap">
+      <label>องศา</label>
+      <input type="range" id="angle-slider" min="0" max="180" value="0"
+        oninput="document.getElementById('angle-out').textContent=this.value+'°'">
+      <span class="slider-val" id="angle-out">0°</span>
+    </div>
+    <div class="lock-row">
+      <input type="checkbox" id="lock-check" checked>
+      <label for="lock-check">ล็อกตำแหน่งหลังเคลื่อนที่</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="sendAngle()" id="btn-send" disabled>ส่งมุม</button>
+      <button class="btn-open"  onclick="quickCmd('open')"  id="btn-open"  disabled>✋ เปิดนิ้ว</button>
+      <button class="btn-close" onclick="quickCmd('close')" id="btn-close" disabled>✊ กำมือ</button>
+      <button onclick="quickCmd('grip',50)"  id="btn-grip50"  disabled>Grip 50%</button>
+      <button onclick="quickCmd('grip',100)" id="btn-grip100" disabled>Grip 100%</button>
+    </div>
   </div>
+
   <div class="card">
-    <div class="card-label">Servo</div>
-    <div class="card-value" id="val-servo">0°</div>
-    <div class="card-unit" id="val-lock">ไม่ล็อก</div>
+    <div class="card-label" style="margin-bottom:12px">สั่งงานด้วยเสียง</div>
+    <div class="voice-row">
+      <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="กดพูดคำสั่ง">🎤</button>
+      <span class="voice-text" id="voice-text">กดไมค์แล้วพูดคำสั่งภาษาไทย</span>
+    </div>
+    <div class="voice-hints">
+      <span>"เปิดนิ้ว"</span><span>"กำมือ"</span><span>"กลาง"</span><span>"ล็อก"</span><span>"ปล่อย"</span>
+    </div>
   </div>
 </div>
 
-<!-- FSR Chart -->
-<div class="card" style="margin-bottom:12px">
-  <div class="card-label" style="margin-bottom:10px">FSR — Real-time</div>
-  <canvas id="fsr-chart"></canvas>
-</div>
-
-<!-- Finger Status -->
-<div class="card" style="margin-bottom:12px">
-  <div class="card-label" style="margin-bottom:4px">นิ้วมือ</div>
-  <div class="finger-grid" id="finger-grid">
-    <!-- จะถูกสร้างโดย JS -->
-  </div>
-</div>
-
-<!-- Motor Control -->
-<div class="card" style="margin-bottom:12px">
-  <div class="card-label" style="margin-bottom:12px">ควบคุม Servo</div>
-  <div class="slider-wrap">
-    <label>องศา</label>
-    <input type="range" id="angle-slider" min="0" max="180" value="0"
-      oninput="document.getElementById('angle-out').textContent=this.value+'°'">
-    <span class="slider-val" id="angle-out">0°</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px">
-    <label style="font-size:13px;color:var(--muted)">ล็อก</label>
-    <input type="checkbox" id="lock-check" checked style="width:16px;height:16px;accent-color:var(--blue)">
-  </div>
-  <div class="btn-row">
-    <button class="btn-primary" onclick="sendAngle()" id="btn-send" disabled>ส่ง</button>
-    <button onclick="quickCmd('open')"  id="btn-open"  disabled>เปิดนิ้ว</button>
-    <button onclick="quickCmd('close')" id="btn-close" disabled>กำมือ</button>
-    <button onclick="quickCmd('grip',50)" id="btn-grip" disabled>Grip 50%</button>
-  </div>
-</div>
-
-<!-- Voice Command -->
-<div class="card" style="margin-bottom:12px">
-  <div class="card-label" style="margin-bottom:10px">Voice Command</div>
-  <div class="voice-row">
-    <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="กดพูดคำสั่ง">🎤</button>
-    <span class="voice-text" id="voice-text">กดไมค์แล้วพูด เช่น "เปิดนิ้ว" "กำมือ" "กลาง"</span>
-  </div>
-</div>
-
-<!-- Log -->
+<!-- ═══ Log ═══ -->
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <div class="card-label">WebSocket Log</div>
-    <button style="font-size:11px;padding:3px 10px" onclick="clearLog()">ล้าง</button>
+  <div class="meta-row" style="margin-bottom:8px">
+    <div class="card-label" style="margin:0">WebSocket Log</div>
+    <button style="font-size:11px;padding:4px 12px" onclick="clearLog()">ล้าง</button>
   </div>
-  <div class="log-box" id="ws-log">
-    <span class="log-sys">// รอการเชื่อมต่อ...</span>
-  </div>
+  <div class="log-box" id="ws-log"><span class="log-sys">// รอการเชื่อมต่อ...</span></div>
 </div>
 
 <script>
 // ── CONFIG — แก้ URL ให้ตรงกับ Railway ────────────────────────
 const SERVER_URL = "wss://exoskeleton-server-production.up.railway.app/dashboard"; // ← Railway production
 
-// ── Chart ────────────────────────────────────────────────────
-const fsrData = {
+// ── Real-time Chart (FSR + Flex สองแกน) ──────────────────────
+const MAX_POINTS = 80;
+const rtData = {
   labels: [],
-  datasets: [{
-    label: 'FSR (N)', data: [],
-    borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.08)',
-    tension: 0.3, fill: true, pointRadius: 0, borderWidth: 1.5
-  }]
+  datasets: [
+    { label: 'FSR (N)', data: [], yAxisID: 'yF',
+      borderColor: '#4f8cff', backgroundColor: 'rgba(79,140,255,0.07)',
+      tension: 0.35, fill: true, pointRadius: 0, borderWidth: 1.6 },
+    { label: 'Flex (°)', data: [], yAxisID: 'yX',
+      borderColor: '#22d3ee', backgroundColor: 'transparent',
+      tension: 0.35, fill: false, pointRadius: 0, borderWidth: 1.6, borderDash: [5,3] },
+  ]
 };
-const chart = new Chart(document.getElementById('fsr-chart'), {
-  type: 'line', data: fsrData,
+const chart = new Chart(document.getElementById('rt-chart'), {
+  type: 'line', data: rtData,
   options: {
-    responsive: true, animation: false,
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { intersect: false, mode: 'index' },
     scales: {
-      x: { display: false },
-      y: { min: 0, max: 55, ticks: { color: '#888', font: { size: 11 } },
-           grid: { color: 'rgba(255,255,255,0.05)' } }
+      x:  { display: false },
+      yF: { min: 0, max: 55, position: 'left',
+            ticks: { color: '#4f8cff', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.05)' } },
+      yX: { min: 0, max: 95, position: 'right',
+            ticks: { color: '#22d3ee', font: { size: 10 } },
+            grid: { display: false } },
     },
-    plugins: { legend: { display: false } }
+    plugins: { legend: { labels: { color: '#8a8f9c', font: { size: 11 }, boxWidth: 18 } } }
   }
 });
 
-function pushChart(val) {
-  const ts = new Date().toLocaleTimeString('th-TH', {hour12:false});
-  fsrData.labels.push(ts);
-  fsrData.datasets[0].data.push(val);
-  if (fsrData.labels.length > 60) {
-    fsrData.labels.shift();
-    fsrData.datasets[0].data.shift();
+let paused = false;
+function togglePause() {
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? '▶ เล่นต่อ' : '⏸ หยุด';
+}
+function pushChart(fsr, flex) {
+  if (paused) return;
+  const ts = new Date().toLocaleTimeString('th-TH', { hour12: false });
+  rtData.labels.push(ts);
+  rtData.datasets[0].data.push(fsr);
+  rtData.datasets[1].data.push(flex);
+  if (rtData.labels.length > MAX_POINTS) {
+    rtData.labels.shift();
+    rtData.datasets.forEach(d => d.data.shift());
   }
-  chart.update();
+  chart.update('none');
 }
 
-// ── Finger Grid ───────────────────────────────────────────────
-const FINGER_NAMES = ['นิ้วโป้ง','ชี้','กลาง','นาง','ก้อย'];
-const fingerGrid = document.getElementById('finger-grid');
-fingerGrid.innerHTML = FINGER_NAMES.map((n, i) => `
-  <div class="finger-card">
-    <div class="finger-name">${n}</div>
-    <div class="finger-val" id="f${i}">—</div>
-    <div class="finger-bar"><div class="finger-fill" id="fb${i}" style="width:0%"></div></div>
-  </div>
-`).join('');
-
-function updateFingers(arr) {
-  if (!arr) return;
-  arr.forEach((v, i) => {
-    const el = document.getElementById('f' + i);
-    const bar = document.getElementById('fb' + i);
-    if (el)  el.textContent = v + '°';
-    if (bar) bar.style.width = Math.min(100, (v / 180) * 100) + '%';
-  });
+// ── Servo Gauge + Finger Visual ───────────────────────────────
+const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
+function updateGauge(angle) {
+  const ratio = Math.min(180, Math.max(0, angle)) / 180;
+  document.getElementById('gauge-arc').setAttribute('stroke-dashoffset', ARC_LEN * (1 - ratio));
+  document.getElementById('gauge-needle').setAttribute('transform',
+    `rotate(${-90 + ratio * 180} 100 105)`);
+  document.getElementById('gauge-text').textContent = angle + '°';
+}
+function updateFinger(flexDeg) {
+  // กระจายมุมงอ 0–90° ไป 3 ข้อนิ้ว ข้อละสูงสุด 30°
+  const per = Math.min(90, Math.max(0, flexDeg)) / 3;
+  document.getElementById('seg1').setAttribute('transform', `rotate(${per} 60 56)`);
+  document.getElementById('seg2').setAttribute('transform', `rotate(${per} 112 56)`);
+  document.getElementById('seg3').setAttribute('transform', `rotate(${per} 152 56)`);
+  document.getElementById('finger-deg').textContent = flexDeg + '°';
+}
+function updateLock(locked) {
+  const el = document.getElementById('lock-badge');
+  el.className = 'lock-badge ' + (locked ? 'lock-on' : 'lock-off');
+  el.textContent = locked ? '🔒 ล็อกอยู่' : '○ ปลดล็อก';
 }
 
-// ── Log ──────────────────────────────────────────────────────
+// ── Packet rate + ความสดของข้อมูล ─────────────────────────────
+let pktCount = 0, pktWindow = 0, lastPktTime = 0;
+setInterval(() => {
+  document.getElementById('rate-tag').textContent = pktWindow + ' Hz';
+  pktWindow = 0;
+  // อายุข้อมูลล่าสุด
+  const ageEl = document.getElementById('val-age');
+  if (!lastPktTime) { ageEl.textContent = '—'; return; }
+  const sec = (Date.now() - lastPktTime) / 1000;
+  ageEl.textContent = sec < 1.5 ? 'สด ✓' : sec.toFixed(0) + ' วิ.ก่อน';
+  ageEl.style.color = sec < 3 ? 'var(--green)' : 'var(--yellow)';
+}, 1000);
+
+// ── Log ───────────────────────────────────────────────────────
 function log(msg, cls = 'log-sys') {
   const el = document.getElementById('ws-log');
-  const ts = new Date().toLocaleTimeString('th-TH', {hour12:false});
+  const ts = new Date().toLocaleTimeString('th-TH', { hour12: false });
   el.innerHTML += `\n<span class="${cls}">[${ts}] ${msg}</span>`;
   el.scrollTop = el.scrollHeight;
 }
@@ -291,22 +420,21 @@ function clearLog() {
   document.getElementById('ws-log').innerHTML = '<span class="log-sys">// cleared</span>';
 }
 
-// ── Status Pills ──────────────────────────────────────────────
+// ── Status Pills + ปุ่ม ───────────────────────────────────────
 function setWsStatus(s) {
   const el = document.getElementById('ws-status');
-  const tx = document.getElementById('ws-text');
+  document.getElementById('ws-text').textContent =
+    s === 'connected' ? 'Server ✓' : s === 'connecting' ? 'Server…' : 'Server ✕';
   el.className = 'status-pill status-' + s;
-  tx.textContent = s === 'connected' ? 'Server Connected'
-                 : s === 'connecting' ? 'Connecting…' : 'Disconnected';
 }
-function setEspStatus(s) {
+function setEspStatus(online) {
   const el = document.getElementById('esp-status');
-  const tx = document.getElementById('esp-text');
-  el.className = 'status-pill status-' + s;
-  tx.textContent = s === 'connected' ? 'Online' : 'Offline';
+  document.getElementById('esp-text').textContent = online ? 'ESP32 ✓' : 'ESP32 ✕';
+  el.className = 'status-pill status-' + (online ? 'connected' : 'disconnected');
+  setButtons(online);
 }
 function setButtons(en) {
-  ['btn-send','btn-open','btn-close','btn-grip']
+  ['btn-send','btn-open','btn-close','btn-grip50','btn-grip100']
     .forEach(id => document.getElementById(id).disabled = !en);
 }
 
@@ -317,22 +445,19 @@ function connect() {
   log('→ Connecting to server...');
   ws = new WebSocket(SERVER_URL);
 
-  ws.onopen = () => {
-    setWsStatus('connected');
-    log('✓ Server connected', 'log-in');
-  };
+  ws.onopen = () => { setWsStatus('connected'); log('✓ Server connected', 'log-in'); };
 
   ws.onmessage = (e) => {
-    const data = JSON.parse(e.data);
+    let data;
+    try { data = JSON.parse(e.data); } catch { return; }
     handleMessage(data);
-    log(`← ${e.data.slice(0, 80)}`, 'log-in');
+    if (data.type !== 'sensor_data') log(`← ${e.data.slice(0, 90)}`, 'log-in');
   };
 
   ws.onclose = () => {
     setWsStatus('disconnected');
-    setEspStatus('disconnected');
-    setButtons(false);
-    log('✕ Disconnected — reconnecting...', 'log-err');
+    setEspStatus(false);
+    log('✕ Disconnected — reconnecting in 3s...', 'log-err');
     setTimeout(connect, 3000);
   };
 
@@ -342,21 +467,33 @@ function connect() {
 // ── Handle Message จาก Server ────────────────────────────────
 function handleMessage(data) {
   if (data.type === 'sensor_data') {
-    document.getElementById('val-fsr').textContent   = (+data.fsr).toFixed(1);
-    document.getElementById('val-flex').textContent  = data.flex;
-    document.getElementById('val-servo').textContent = data.servo + '°';
-    document.getElementById('val-lock').textContent  = data.lock ? '🔒 ล็อก' : 'ปลดล็อก';
-    pushChart(+data.fsr);
-    if (data.finger) updateFingers(data.finger);
+    pktCount++; pktWindow++; lastPktTime = Date.now();
+    document.getElementById('val-pkts').textContent = pktCount.toLocaleString() + ' แพ็กเก็ต';
+
+    const fsr  = +data.fsr  || 0;
+    const flex = +data.flex || 0;
+    const mic  = +data.mic  || 0;
+
+    document.getElementById('val-fsr').textContent  = fsr.toFixed(1);
+    document.getElementById('val-flex').textContent = flex + '°';
+    document.getElementById('val-mic').textContent  = Math.round((mic / 4095) * 100) + '%';
+    document.getElementById('mic-bar').style.width  = (mic / 4095) * 100 + '%';
+
+    updateGauge(+data.servo || 0);
+    updateFinger(flex);
+    updateLock(!!data.lock);
+    pushChart(fsr, flex);
     setButtons(true);
   }
-  if (data.type === 'esp32_status') {
+  else if (data.type === 'esp32_status') {
     const online = data.status === 'connected';
-    setEspStatus(online ? 'connected' : 'disconnected');
-    if (!online) setButtons(false);
-    log(`ESP32 ${online ? 'Online' : 'Offline'}`, online ? 'log-in' : 'log-err');
+    setEspStatus(online);
+    log(`ESP32 ${online ? 'Online ✓' : 'Offline ✕'}`, online ? 'log-in' : 'log-err');
   }
-  if (data.type === 'error') {
+  else if (data.type === 'hello') {
+    log(`👋 ${data.device || 'ESP32'} v${data.version || '?'} เชื่อมต่อแล้ว`, 'log-in');
+  }
+  else if (data.type === 'error') {
     log('✕ ' + data.message, 'log-err');
   }
 }
@@ -368,13 +505,11 @@ function send(data) {
   ws.send(msg);
   log(`→ ${msg}`, 'log-out');
 }
-
 function sendAngle() {
   const angle = parseInt(document.getElementById('angle-slider').value);
   const lock  = document.getElementById('lock-check').checked;
   send({ type: 'command', action: 'angle', angle, lock });
 }
-
 function quickCmd(action, intensity = 100) {
   send({ type: 'command', action, intensity });
 }
