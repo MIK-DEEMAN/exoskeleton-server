@@ -264,7 +264,7 @@ canvas { width: 100% !important; }
       <div class="level-bar"><div class="level-fill" id="mic-bar"></div></div>
     </div>
     <div class="card stat-accent-green">
-      <div class="card-label">อัปเดตล่าสุด</div>
+      <div class="card-label">สถานะการส่งข้อมูล</div>
       <div class="stat-value" id="val-age" style="font-size:24px">—</div>
       <div class="stat-unit" id="val-pkts">0 แพ็กเก็ต</div>
     </div>
@@ -409,7 +409,7 @@ setInterval(() => {
   const ageEl = document.getElementById('val-age');
   if (!lastPktTime) { ageEl.textContent = '—'; return; }
   const sec = (Date.now() - lastPktTime) / 1000;
-  ageEl.textContent = sec < 1.5 ? 'สด' : sec.toFixed(0) + ' วิ.ก่อน';
+  ageEl.textContent = sec < 1.5 ? 'ปัจจุบัน' : 'ล่าช้า';
   ageEl.style.color = sec < 3 ? 'var(--green)' : 'var(--yellow)';
 }, 1000);
 
