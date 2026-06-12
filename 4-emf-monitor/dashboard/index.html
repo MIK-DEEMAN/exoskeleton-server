@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMF Voltage Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080810;
+  --surface:  #111120;
+  --surface2: #181830;
+  --border:   rgba(120,100,255,0.14);
+  --text:     #ededf5;
+  --muted:    #5a5a78;
+  --purple:   #7c5cfc;
+  --blue:     #3b82f6;
+  --green:    #10b981;
+  --yellow:   #f59e0b;
+  --red:      #ef4444;
+  --radius:   16px;
+  --r-sm:     10px;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; padding-bottom: 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #7c5cfc, #3b82f6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.brand-name   { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+.brand-sub    { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.header-pills { display: flex; gap: 6px; }
+
+/* ── Pills ───────────────────────────────────────────────────── */
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 99px;
+  transition: all 0.3s;
+}
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.pill-green  { background: rgba(16,185,129,.13);  color: var(--green); }
+.pill-red    { background: rgba(239,68,68,.13);   color: var(--red);   }
+.pill-yellow { background: rgba(245,158,11,.13);  color: var(--yellow);}
+.pill-green  .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.pill-red    .dot { background: var(--red);   }
+.pill-yellow .dot { background: var(--yellow); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ── Gauge Card ──────────────────────────────────────────────── */
+.gauge-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px 16px;
+  margin-bottom: 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.gauge-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+  opacity: 0.6;
+}
+
+.gauge-section-label {
+  font-size: 10px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+/* SVG Gauge */
+.gauge-svg-wrap { position: relative; display: inline-block; }
+svg#gauge { width: min(300px, 90vw); height: auto; display: block; }
+
+.cur-display { margin-top: 4px; }
+.cur-number {
+  font-size: 52px; font-weight: 200;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: color 0.4s ease;
+}
+.cur-unit { font-size: 18px; color: var(--muted); font-weight: 300; }
+.cur-sub  {
+  font-size: 12px; color: var(--muted); margin-top: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.cur-sub span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── Stats Grid ──────────────────────────────────────────────── */
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.stat-min::after  { background: var(--green);  }
+.stat-max::after  { background: var(--red);    }
+.stat-avg::after  { background: var(--yellow); }
+.stat-acc::after  { background: var(--purple); }
+
+.stat-label {
+  font-size: 10px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 5px;
+}
+.stat-label .badge {
+  font-size: 9px; padding: 1px 6px; border-radius: 4px; font-weight: 600;
+}
+.badge-min { background: rgba(16,185,129,.15);  color: var(--green);  }
+.badge-max { background: rgba(239,68,68,.15);   color: var(--red);    }
+.badge-avg { background: rgba(245,158,11,.15);  color: var(--yellow); }
+.badge-acc { background: rgba(124,92,252,.15);  color: var(--purple); }
+
+.stat-value {
+  font-size: 26px; font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stat-unit { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ── Chart Card ──────────────────────────────────────────────── */
+.chart-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.chart-title {
+  font-size: 11px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.chart-actions { display: flex; gap: 6px; }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  padding: 6px 12px; border-radius: var(--r-sm);
+  border: 0.5px solid var(--border);
+  background: var(--surface2); cursor: pointer;
+  font-size: 11px; color: var(--text);
+  transition: all .15s;
+}
+.btn:hover:not(:disabled) {
+  background: rgba(124,92,252,.15);
+  border-color: rgba(124,92,252,.35);
+  color: #a58fff;
+}
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239,68,68,.15);
+  border-color: rgba(239,68,68,.35);
+  color: var(--red);
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 12px; border-top: 0.5px solid var(--border);
+  font-size: 11px; color: var(--muted);
+}
+
+/* ── Offline overlay ─────────────────────────────────────────── */
+.no-data-msg {
+  text-align: center; padding: 32px 16px; color: var(--muted);
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-icon">⚡</div>
+    <div>
+      <div class="brand-name">EMF Voltage Monitor</div>
+      <div class="brand-sub">ADS1115 · Differential CH0–CH1 · ±256 mV</div>
+    </div>
+  </div>
+  <div class="header-pills">
+    <span class="pill pill-yellow" id="srv-pill">
+      <span class="dot"></span><span>Connecting</span>
+    </span>
+    <span class="pill pill-yellow" id="esp-pill">
+      <span class="dot"></span><span>ESP32 —</span>
+    </span>
+  </div>
+</div>
+
+<!-- ── Gauge Card ── -->
+<div class="gauge-card">
+  <div class="gauge-section-label">Real-time Voltage</div>
+
+  <div class="gauge-svg-wrap">
+    <svg id="gauge" viewBox="0 0 300 162" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Arc gradient: green → yellow → red -->
+        <linearGradient id="arc-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#10b981"/>
+          <stop offset="50%"  stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#ef4444"/>
+        </linearGradient>
+        <!-- Glow filter for needle -->
+        <filter id="needle-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-center">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Track arc (background) -->
+      <path d="M 22 150 A 128 128 0 0 1 278 150"
+            fill="none" stroke="#1e1e38" stroke-width="20" stroke-linecap="round"/>
+
+      <!-- Filled arc (shows value, clipped) -->
+      <path id="arc-fill"
+            d="M 22 150 A 128 128 0 0 1 278 150"
+            fill="none" stroke="url(#arc-grad)" stroke-width="20"
+            stroke-linecap="round"
+            stroke-dasharray="402" stroke-dashoffset="402"
+            style="transition: stroke-dashoffset 0.15s ease"/>
+
+      <!-- Tick marks -->
+      <g stroke="#2a2a50" stroke-width="1.5">
+        <!-- -256 -->
+        <line x1="22"  y1="150" x2="30"  y2="150"/>
+        <!-- -128 (left 45°) -->
+        <line x1="59"  y1="59"  x2="64"  y2="67"/>
+        <!-- 0 (top) -->
+        <line x1="150" y1="22"  x2="150" y2="32"/>
+        <!-- +128 (right 45°) -->
+        <line x1="241" y1="59"  x2="236" y2="67"/>
+        <!-- +256 -->
+        <line x1="278" y1="150" x2="270" y2="150"/>
+      </g>
+
+      <!-- Axis labels -->
+      <text x="16"  y="162" font-size="9.5" fill="#3d3d5c" font-family="system-ui" text-anchor="middle">−256</text>
+      <text x="150" y="16"  font-size="9.5" fill="#3d3d5c" font-family="system-ui" text-anchor="middle">0</text>
+      <text x="284" y="162" font-size="9.5" fill="#3d3d5c" font-family="system-ui" text-anchor="middle">+256</text>
+      <text x="150" y="162" font-size="8"   fill="#2a2a40" font-family="system-ui" text-anchor="middle">mV</text>
+
+      <!-- Needle -->
+      <g id="needle" transform="rotate(0, 150, 150)" style="transition: transform 0.15s ease">
+        <line x1="150" y1="150" x2="150" y2="35"
+              stroke="#c8c8ff" stroke-width="2" stroke-linecap="round"
+              filter="url(#needle-glow)" opacity="0.9"/>
+        <polygon points="150,28 147,42 153,42"
+                 fill="#c8c8ff" opacity="0.9" filter="url(#needle-glow)"/>
+      </g>
+
+      <!-- Center hub -->
+      <circle cx="150" cy="150" r="8" fill="#1a1a30" stroke="#7c5cfc" stroke-width="2"
+              filter="url(#glow-center)"/>
+      <circle cx="150" cy="150" r="3.5" fill="#7c5cfc"/>
+    </svg>
+  </div>
+
+  <div class="cur-display">
+    <div class="cur-number" id="cur-val">
+      <span id="cur-num">—</span><span class="cur-unit"> mV</span>
+    </div>
+    <div class="cur-sub">
+      <span id="sps-display">— samples/s</span>
+      <span>·</span>
+      <span id="sample-total">0 total</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stats Grid ── -->
+<div class="grid-2x2">
+  <div class="stat-card stat-min">
+    <div class="stat-label"><span class="badge badge-min">MIN</span> Minimum</div>
+    <div class="stat-value" id="min-val" style="color:var(--green)">—</div>
+    <div class="stat-unit">millivolts</div>
+  </div>
+  <div class="stat-card stat-max">
+    <div class="stat-label"><span class="badge badge-max">MAX</span> Maximum</div>
+    <div class="stat-value" id="max-val" style="color:var(--red)">—</div>
+    <div class="stat-unit">millivolts</div>
+  </div>
+  <div class="stat-card stat-avg">
+    <div class="stat-label"><span class="badge badge-avg">AVG</span> Average |x|</div>
+    <div class="stat-value" id="avg-val" style="color:var(--yellow)">—</div>
+    <div class="stat-unit">millivolts</div>
+  </div>
+  <div class="stat-card stat-acc">
+    <div class="stat-label"><span class="badge badge-acc">Σ</span> Accumulated</div>
+    <div class="stat-value" id="acc-val" style="color:var(--purple)">—</div>
+    <div class="stat-unit">millivolts</div>
+  </div>
+</div>
+
+<!-- ── Waveform Chart ── -->
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Waveform — Last 100 Samples</span>
+    <div class="chart-actions">
+      <button class="btn btn-danger" id="reset-btn" onclick="sendReset()">Reset Stats</button>
+      <button class="btn" id="freeze-btn" onclick="toggleFreeze()">Pause</button>
+    </div>
+  </div>
+  <canvas id="chart" height="110"></canvas>
+</div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+  <span id="uptime-display">Uptime: —</span>
+  <span>EMF Monitor v1.0 · ADS1115 GAIN_SIXTEEN</span>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────
+const SERVER_URL = "wss://YOUR_SERVER.railway.app"; // ← เปลี่ยนตรงนี้
+const MAX_PTS    = 100;
+
+// ── State ──────────────────────────────────────────────────────
+let ws           = null;
+let frozen       = false;
+let startTime    = Date.now();
+let totalSamples = 0;
+let spsCounter   = 0;
+let lastSps      = 0;
+
+// ── DOM refs ───────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const srvPill  = $('srv-pill');
+const espPill  = $('esp-pill');
+const curNum   = $('cur-num');
+const curVal   = $('cur-val');
+const minEl    = $('min-val');
+const maxEl    = $('max-val');
+const avgEl    = $('avg-val');
+const accEl    = $('acc-val');
+const spsEl    = $('sps-display');
+const totalEl  = $('sample-total');
+const uptimeEl = $('uptime-display');
+const needle   = $('needle');
+const arcFill  = $('arc-fill');
+const freezeBtn= $('freeze-btn');
+
+// ── Chart ──────────────────────────────────────────────────────
+const ctx  = $('chart').getContext('2d');
+const grad = ctx.createLinearGradient(0, 0, 0, 160);
+grad.addColorStop(0, 'rgba(124,92,252,0.4)');
+grad.addColorStop(0.6, 'rgba(124,92,252,0.05)');
+grad.addColorStop(1, 'rgba(124,92,252,0)');
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels  : [],
+    datasets: [{
+      data           : [],
+      borderColor    : '#7c5cfc',
+      backgroundColor: grad,
+      borderWidth    : 1.5,
+      pointRadius    : 0,
+      tension        : 0.25,
+      fill           : true,
+    }]
+  },
+  options: {
+    animation: false,
+    responsive: true,
+    plugins  : { legend: { display: false }, tooltip: { enabled: false } },
+    scales   : {
+      x: { display: false },
+      y: {
+        grid  : { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'transparent' },
+        ticks : {
+          color: '#3d3d5c', font: { size: 10 },
+          callback: v => v.toFixed(2) + ' mV',
+          maxTicksLimit: 5,
+        },
+      }
+    }
+  }
+});
+
+// ── Gauge update ───────────────────────────────────────────────
+// Gauge arc: center=(150,150), radius=128, angle from left(-256mV) to right(+256mV)
+// Arc total perimeter (half-circle) = π × 128 ≈ 402
+const ARC_LEN = 402;
+
+function updateGauge(mV) {
+  const clamped = Math.max(-256, Math.min(256, mV));
+
+  // Arc fill: 0 offset = full fill (right), ARC_LEN = empty (left)
+  const pct = (clamped + 256) / 512;          // 0..1
+  const dashOffset = ARC_LEN * (1 - pct);
+  arcFill.style.strokeDashoffset = dashOffset.toFixed(1);
+
+  // Needle rotation:  -256mV → +90°  (left)  |  0mV → 0°  (up)  |  +256mV → -90° (right)
+  const angle = -(clamped / 256) * 90;
+  needle.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+  needle.style.transformOrigin = '150px 150px';  // SVG px, matches cx/cy of hub
+
+  // Color by absolute value
+  const abs = Math.abs(mV);
+  const color = abs < 50 ? 'var(--green)' : abs < 150 ? 'var(--yellow)' : 'var(--red)';
+  curVal.style.color = color;
+  curNum.textContent = mV.toFixed(3);
+}
+
+// ── Status pills ───────────────────────────────────────────────
+function setPill(el, state, label) {
+  el.className = 'pill pill-' +
+    (state === 'connected' ? 'green' : state === 'connecting' ? 'yellow' : 'red');
+  el.innerHTML = `<span class="dot"></span><span>${label}</span>`;
+}
+
+// ── Handle incoming sensor data ────────────────────────────────
+function onSensorData(d) {
+  totalSamples++;
+  spsCounter++;
+
+  updateGauge(d.cur);
+
+  if (d.min !== undefined) minEl.textContent = d.min.toFixed(3);
+  if (d.max !== undefined) maxEl.textContent = d.max.toFixed(3);
+  if (d.avg !== undefined) avgEl.textContent = d.avg.toFixed(3);
+  if (d.acc !== undefined) accEl.textContent = d.acc.toFixed(2);
+
+  if (frozen) return;
+
+  chart.data.labels.push('');
+  chart.data.datasets[0].data.push(d.cur);
+  if (chart.data.labels.length > MAX_PTS) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
+
+  // Auto-scale Y
+  const vals = chart.data.datasets[0].data;
+  if (vals.length > 2) {
+    const lo  = Math.min(...vals);
+    const hi  = Math.max(...vals);
+    const pad = Math.max((hi - lo) * 0.25, 2);
+    chart.options.scales.y.min = lo - pad;
+    chart.options.scales.y.max = hi + pad;
+  }
+
+  chart.update('none');
+}
+
+// ── Controls ───────────────────────────────────────────────────
+function sendReset() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'reset' }));
+  }
+  // Clear local chart
+  chart.data.labels   = [];
+  chart.data.datasets[0].data = [];
+  chart.update('none');
+  totalSamples = 0;
+  minEl.textContent = maxEl.textContent = avgEl.textContent = accEl.textContent = '—';
+  curNum.textContent = '—';
+  arcFill.style.strokeDashoffset = ARC_LEN;
+  needle.style.transform = 'rotate(0deg)';
+}
+
+function toggleFreeze() {
+  frozen = !frozen;
+  freezeBtn.textContent = frozen ? 'Resume' : 'Pause';
+  freezeBtn.style.color = frozen ? 'var(--yellow)' : '';
+}
+
+// ── WebSocket ──────────────────────────────────────────────────
+function connect() {
+  setPill(srvPill, 'connecting', 'Connecting…');
+  try {
+    ws = new WebSocket(SERVER_URL + '/dashboard');
+  } catch {
+    setPill(srvPill, 'disconnected', 'Error');
+    setTimeout(connect, 5000);
+    return;
+  }
+
+  ws.onopen = () => setPill(srvPill, 'connected', 'Server');
+
+  ws.onmessage = e => {
+    let d;
+    try { d = JSON.parse(e.data); } catch { return; }
+
+    if (d.type === 'esp32_status') {
+      const on = d.status === 'connected';
+      setPill(espPill, d.status, 'ESP32 ' + (on ? 'Online' : 'Offline'));
+      return;
+    }
+    if (d.type === 'sensor_data') onSensorData(d);
+  };
+
+  ws.onclose = () => {
+    setPill(srvPill, 'disconnected', 'Disconnected');
+    setPill(espPill, 'disconnected', 'ESP32 —');
+    setTimeout(connect, 3000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+// ── Uptime & SPS ticker ────────────────────────────────────────
+setInterval(() => {
+  // SPS
+  spsEl.textContent   = lastSps + ' samples/s';
+  totalEl.textContent = totalSamples.toLocaleString() + ' total';
+  lastSps    = spsCounter;
+  spsCounter = 0;
+
+  // Uptime
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  uptimeEl.textContent = `Uptime: ${hh}:${mm}:${ss}`;
+}, 1000);
+
+connect();
+</script>
+</body>
+</html>
