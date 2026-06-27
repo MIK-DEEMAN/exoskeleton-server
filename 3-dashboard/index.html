@@ -21,6 +21,7 @@
   --red:      #f87171;
   --yellow:   #fbbf24;
   --purple:   #a78bfa;
+  --pink:     #f472b6;
   --radius:   16px;
 }
 html { scroll-behavior: smooth; }
@@ -66,12 +67,11 @@ body {
 
 /* ── Layout Grid ── */
 .grid { display: grid; gap: 12px; margin-bottom: 12px; }
-.grid-hero  { grid-template-columns: 1.1fr 1fr; }
-.grid-stats { grid-template-columns: repeat(4, 1fr); }
 .grid-two   { grid-template-columns: 1fr 1fr; }
+.grid-stats { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 760px) {
-  .grid-hero, .grid-two { grid-template-columns: 1fr; }
-  .grid-stats { grid-template-columns: repeat(2, 1fr); }
+  .grid-two { grid-template-columns: 1fr; }
+  .grid-stats { grid-template-columns: 1fr; }
 }
 
 /* ── Cards ── */
@@ -83,10 +83,16 @@ body {
   font-size: 11px; color: var(--muted); letter-spacing: .06em;
   text-transform: uppercase; margin-bottom: 8px; font-weight: 600;
 }
-.stat-value { font-size: 30px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.ch-title { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ch-title .tag {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 7px;
+}
+.ch0 .tag { background: rgba(79,140,255,.15); color: var(--blue); }
+.ch1 .tag { background: rgba(167,139,250,.15); color: var(--purple); }
+.ch-title h2 { font-size: 13px; font-weight: 600; }
+
+.stat-value { font-size: 28px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .stat-unit  { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
-.stat-accent-blue   .stat-value { color: var(--blue); }
-.stat-accent-cyan   .stat-value { color: var(--cyan); }
 .stat-accent-purple .stat-value { color: var(--purple); }
 .stat-accent-green  .stat-value { color: var(--green); }
 
@@ -97,15 +103,18 @@ body {
   transition: width .12s linear; }
 
 /* ── Gauges ── */
-.visual-wrap { display: flex; align-items: center; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
-.visual-box  { text-align: center; }
-.visual-box svg { display: block; margin: 0 auto; }
-.visual-cap  { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.gauge-val   { font-size: 22px; font-weight: 600; fill: var(--text); }
+.gauge-wrap { display: flex; align-items: flex-start; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
+.gauge-box  { text-align: center; }
+.gauge-box svg { display: block; margin: 0 auto; }
+.gauge-cap  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.gauge-val  { font-size: 20px; font-weight: 600; fill: var(--text); }
+.fsr-readout { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+.fsr-readout .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fsr-readout .u { font-size: 11px; color: var(--muted); }
 .lock-badge {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 99px;
-  margin-top: 8px; border: 0.5px solid var(--border);
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
+  margin-top: 6px; border: 0.5px solid var(--border);
 }
 .lock-on  { background: rgba(251,191,36,.10); color: var(--yellow); }
 .lock-off { background: rgba(255,255,255,.04); color: var(--muted); }
@@ -127,13 +136,14 @@ button:disabled { opacity: .32; cursor: not-allowed; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ── Slider ── */
-.slider-wrap { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
-.slider-wrap label { font-size: 12.5px; color: var(--muted); min-width: 42px; }
+.slider-wrap { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+.slider-wrap label { font-size: 12px; color: var(--muted); min-width: 60px; }
 input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
-.slider-val { font-size: 17px; font-weight: 600; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
-.lock-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.lock-row label { font-size: 12.5px; color: var(--muted); }
-.lock-row input { width: 16px; height: 16px; accent-color: var(--blue); }
+.s1 input[type=range] { accent-color: var(--purple); }
+.slider-val { font-size: 16px; font-weight: 600; min-width: 50px; text-align: right; font-variant-numeric: tabular-nums; }
+.lock-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.lock-row label { font-size: 12px; color: var(--muted); }
+.lock-row input { width: 15px; height: 15px; accent-color: var(--blue); }
 
 /* ── Voice ── */
 .voice-row { display: flex; align-items: center; gap: 12px; }
@@ -168,7 +178,7 @@ input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
 .chart-box { position: relative; height: 160px; }
 canvas { width: 100% !important; }
 
-/* ── Footer rate ── */
+/* ── meta ── */
 .meta-row { display: flex; justify-content: space-between; align-items: center; }
 .rate-tag { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
@@ -179,7 +189,7 @@ canvas { width: 100% !important; }
 <div class="header">
   <div>
     <h1>Finger Exoskeleton</h1>
-    <div class="sub">ESP32 · Railway WebSocket · Real-time</div>
+    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2 · Flex×2) · Railway WebSocket</div>
   </div>
   <div class="pills">
     <div class="status-pill status-disconnected" id="ws-status">
@@ -191,87 +201,30 @@ canvas { width: 100% !important; }
   </div>
 </div>
 
-<!-- ═══ Hero: Servo Gauge + Flex Gauge ═══ -->
-<div class="grid grid-hero">
-  <div class="card">
-    <div class="meta-row">
-      <div class="card-label">สถานะอุปกรณ์</div>
-      <div class="rate-tag" id="rate-tag">— Hz</div>
-    </div>
-    <div class="visual-wrap">
-      <!-- Servo Gauge (0–180°) -->
-      <div class="visual-box">
-        <svg width="170" height="110" viewBox="0 0 200 120">
-          <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
-                stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
-          <path id="servo-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
-                stroke="url(#servoGrad)" stroke-width="12" stroke-linecap="round"
-                stroke-dasharray="235.6" stroke-dashoffset="235.6"/>
-          <defs>
-            <linearGradient id="servoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"  stop-color="#4f8cff"/>
-              <stop offset="100%" stop-color="#a78bfa"/>
-            </linearGradient>
-            <linearGradient id="flexGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"  stop-color="#22d3ee"/>
-              <stop offset="100%" stop-color="#34d399"/>
-            </linearGradient>
-          </defs>
-          <line id="servo-needle" x1="100" y1="105" x2="100" y2="45"
-                stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
-                transform="rotate(-90 100 105)"/>
-          <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
-          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="servo-text">0°</text>
-        </svg>
-        <div class="visual-cap">Servo Motor (0–180°)</div>
-        <div class="lock-badge lock-off" id="lock-badge">ปลดล็อก</div>
-      </div>
-      <!-- Flex Gauge (0–90°) -->
-      <div class="visual-box">
-        <svg width="170" height="110" viewBox="0 0 200 120">
-          <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
-                stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
-          <path id="flex-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
-                stroke="url(#flexGrad)" stroke-width="12" stroke-linecap="round"
-                stroke-dasharray="235.6" stroke-dashoffset="235.6"/>
-          <line id="flex-needle" x1="100" y1="105" x2="100" y2="45"
-                stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
-                transform="rotate(-90 100 105)"/>
-          <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
-          <text x="100" y="92" text-anchor="middle" class="gauge-val" id="flex-text">0°</text>
-        </svg>
-        <div class="visual-cap">Flex — มุมงอนิ้ว (0–90°)</div>
-      </div>
-    </div>
-  </div>
+<!-- ═══ Two Channel Cards ═══ -->
+<div class="grid grid-two" id="channel-cards"></div>
 
-  <!-- ═══ Stats ═══ -->
-  <div class="grid grid-stats" style="margin-bottom:0">
-    <div class="card stat-accent-blue">
-      <div class="card-label">FSR แรงกด</div>
-      <div class="stat-value" id="val-fsr">—</div>
-      <div class="stat-unit">Newton (0–50)</div>
-    </div>
-    <div class="card stat-accent-cyan">
-      <div class="card-label">Flex โค้งงอ</div>
-      <div class="stat-value" id="val-flex">—</div>
-      <div class="stat-unit">องศา (0–90)</div>
-    </div>
-    <div class="card stat-accent-purple">
-      <div class="card-label">เสียง (Mic)</div>
-      <div class="stat-value" id="val-mic">—</div>
-      <div class="stat-unit">ระดับสัญญาณ</div>
-      <div class="level-bar"><div class="level-fill" id="mic-bar"></div></div>
-    </div>
-    <div class="card stat-accent-green">
-      <div class="card-label">สถานะการส่งข้อมูล</div>
-      <div class="stat-value" id="val-age" style="font-size:24px">—</div>
-      <div class="stat-unit" id="val-pkts">0 แพ็กเก็ต</div>
-    </div>
+<!-- ═══ Mic + Data status ═══ -->
+<div class="grid grid-stats">
+  <div class="card stat-accent-purple">
+    <div class="card-label">เสียง (Mic)</div>
+    <div class="stat-value" id="val-mic">—</div>
+    <div class="stat-unit">ระดับสัญญาณ</div>
+    <div class="level-bar"><div class="level-fill" id="mic-bar"></div></div>
+  </div>
+  <div class="card stat-accent-green">
+    <div class="card-label">สถานะการส่งข้อมูล</div>
+    <div class="stat-value" id="val-age" style="font-size:24px">—</div>
+    <div class="stat-unit" id="val-pkts">0 แพ็กเก็ต</div>
+  </div>
+  <div class="card">
+    <div class="meta-row"><div class="card-label" style="margin:0">อัตราการส่ง</div></div>
+    <div class="stat-value" id="val-hz" style="font-size:24px">— Hz</div>
+    <div class="stat-unit">ปกติ ~10 Hz</div>
   </div>
 </div>
 
-<!-- ═══ Real-time Charts (แยก FSR / Flex) ═══ -->
+<!-- ═══ Charts (FSR / Flex) — each 2 series ═══ -->
 <div class="grid grid-two">
   <div class="card">
     <div class="meta-row" style="margin-bottom:10px">
@@ -286,24 +239,34 @@ canvas { width: 100% !important; }
   </div>
 </div>
 
-<!-- ═══ Controls + Voice ═══ -->
+<!-- ═══ Controls (per-channel) + Voice ═══ -->
 <div class="grid grid-two">
   <div class="card">
-    <div class="card-label" style="margin-bottom:12px">ควบคุม Servo</div>
-    <div class="slider-wrap">
-      <label>องศา</label>
-      <input type="range" id="angle-slider" min="0" max="180" value="0"
-        oninput="document.getElementById('angle-out').textContent=this.value+'°'">
-      <span class="slider-val" id="angle-out">0°</span>
+    <div class="card-label" style="margin-bottom:8px">ควบคุม Servo</div>
+
+    <div class="slider-wrap s0">
+      <label>ช่อง 1 องศา</label>
+      <input type="range" id="angle0" min="0" max="180" value="0"
+        oninput="document.getElementById('angle0-out').textContent=this.value+'°'">
+      <span class="slider-val" id="angle0-out">0°</span>
+    </div>
+    <div class="slider-wrap s1">
+      <label>ช่อง 2 องศา</label>
+      <input type="range" id="angle1" min="0" max="180" value="0"
+        oninput="document.getElementById('angle1-out').textContent=this.value+'°'">
+      <span class="slider-val" id="angle1-out">0°</span>
     </div>
     <div class="lock-row">
       <input type="checkbox" id="lock-check" checked>
       <label for="lock-check">ล็อกตำแหน่งหลังเคลื่อนที่</label>
     </div>
     <div class="btn-row">
-      <button class="btn-primary" onclick="sendAngle()" id="btn-send" disabled>ส่งมุม</button>
-      <button class="btn-open"  onclick="quickCmd('open')"  id="btn-open"  disabled>เปิดนิ้ว</button>
-      <button class="btn-close" onclick="quickCmd('close')" id="btn-close" disabled>กำมือ</button>
+      <button class="btn-primary" onclick="sendAngle(0)" id="btn-send0" disabled>ส่งช่อง 1</button>
+      <button class="btn-primary" onclick="sendAngle(1)" id="btn-send1" disabled>ส่งช่อง 2</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn-open"  onclick="quickCmd('open')"  id="btn-open"  disabled>เปิดทั้งคู่</button>
+      <button class="btn-close" onclick="quickCmd('close')" id="btn-close" disabled>กำทั้งคู่</button>
       <button onclick="quickCmd('grip',50)"  id="btn-grip50"  disabled>Grip 50%</button>
       <button onclick="quickCmd('grip',100)" id="btn-grip100" disabled>Grip 100%</button>
     </div>
@@ -334,77 +297,111 @@ canvas { width: 100% !important; }
 // ── CONFIG — แก้ URL ให้ตรงกับ Railway ────────────────────────
 const SERVER_URL = "wss://exoskeleton-server-production.up.railway.app/dashboard"; // ← Railway production
 
-// ── Real-time Charts (แยก FSR / Flex) ─────────────────────────
-const MAX_POINTS = 80;
+// ── 2 ช่อง: สีประจำช่อง ───────────────────────────────────────
+const CH = [
+  { name: 'ช่อง 1', servo: '#4f8cff', flex: '#22d3ee', cls: 'ch0' },
+  { name: 'ช่อง 2', servo: '#a78bfa', flex: '#f472b6', cls: 'ch1' },
+];
 
-function makeChart(canvasId, label, color, bgColor, yMax) {
+// ── สร้างการ์ดต่อช่อง (servo gauge + flex gauge + FSR) ────────
+const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
+document.getElementById('channel-cards').innerHTML = CH.map((c, i) => `
+  <div class="card ${c.cls}">
+    <div class="ch-title"><span class="tag">${c.name}</span><h2>Servo &amp; Flex</h2></div>
+    <div class="gauge-wrap">
+      ${gaugeSVG('servo'+i, c.servo, '0–180°')}
+      ${gaugeSVG('flex'+i,  c.flex,  '0–90°')}
+    </div>
+    <div class="gauge-wrap" style="margin-top:2px">
+      <div class="gauge-cap">Servo</div><div class="gauge-cap">Flex</div>
+    </div>
+    <div class="fsr-readout">
+      <span class="n" id="fsr${i}" style="color:${c.servo}">—</span> <span class="u">N (FSR แรงกด)</span>
+      <div><span class="lock-badge lock-off" id="lock${i}">ปลดล็อก</span></div>
+    </div>
+  </div>
+`).join('');
+
+function gaugeSVG(id, color, cap) {
+  return `<div class="gauge-box">
+    <svg width="150" height="98" viewBox="0 0 200 120">
+      <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+            stroke="rgba(255,255,255,0.08)" stroke-width="12" stroke-linecap="round"/>
+      <path id="${id}-arc" d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
+            stroke="${color}" stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="${ARC_LEN}" stroke-dashoffset="${ARC_LEN}"/>
+      <line id="${id}-needle" x1="100" y1="105" x2="100" y2="48"
+            stroke="#eef0f4" stroke-width="3" stroke-linecap="round"
+            transform="rotate(-90 100 105)"/>
+      <circle cx="100" cy="105" r="6" fill="#eef0f4"/>
+      <text x="100" y="92" text-anchor="middle" class="gauge-val" id="${id}-text">0°</text>
+    </svg>
+  </div>`;
+}
+
+function setGauge(prefix, value, max) {
+  const ratio = Math.min(max, Math.max(0, value)) / max;
+  const arc = document.getElementById(prefix + '-arc');
+  const ndl = document.getElementById(prefix + '-needle');
+  const txt = document.getElementById(prefix + '-text');
+  if (!arc) return;
+  arc.setAttribute('stroke-dashoffset', ARC_LEN * (1 - ratio));
+  ndl.setAttribute('transform', `rotate(${-90 + ratio * 180} 100 105)`);
+  txt.textContent = Math.round(value) + '°';
+}
+function updateLock(i, locked) {
+  const el = document.getElementById('lock' + i);
+  el.className = 'lock-badge ' + (locked ? 'lock-on' : 'lock-off');
+  el.textContent = locked ? 'ล็อกอยู่' : 'ปลดล็อก';
+}
+
+// ── Charts: FSR (2 series) + Flex (2 series) ─────────────────
+const MAX_POINTS = 80;
+function makeChart(canvasId, yMax, series) {
   return new Chart(document.getElementById(canvasId), {
     type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label, data: [],
-        borderColor: color, backgroundColor: bgColor,
-        tension: 0.35, fill: true, pointRadius: 0, borderWidth: 1.6
-      }]
-    },
+    data: { labels: [], datasets: series.map(s => ({
+      label: s.label, data: [], borderColor: s.color,
+      backgroundColor: 'transparent', tension: 0.35, fill: false,
+      pointRadius: 0, borderWidth: 1.6
+    })) },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { intersect: false, mode: 'index' },
       scales: {
         x: { display: false },
-        y: { min: 0, max: yMax,
-             ticks: { color: '#8a8f9c', font: { size: 10 } },
+        y: { min: 0, max: yMax, ticks: { color: '#8a8f9c', font: { size: 10 } },
              grid: { color: 'rgba(255,255,255,0.05)' } }
       },
-      plugins: { legend: { display: false } }
+      plugins: { legend: { labels: { color: '#8a8f9c', font: { size: 11 }, boxWidth: 16 } } }
     }
   });
 }
-
-const fsrChart  = makeChart('fsr-chart',  'FSR (N)',  '#4f8cff', 'rgba(79,140,255,0.07)', 50);
-const flexChart = makeChart('flex-chart', 'Flex (°)', '#22d3ee', 'rgba(34,211,238,0.07)', 90);
+const fsrChart = makeChart('fsr-chart', 50, [
+  { label: 'ช่อง 1', color: CH[0].servo }, { label: 'ช่อง 2', color: CH[1].servo }]);
+const flexChart = makeChart('flex-chart', 90, [
+  { label: 'ช่อง 1', color: CH[0].flex }, { label: 'ช่อง 2', color: CH[1].flex }]);
 
 let paused = false;
 function togglePause() {
   paused = !paused;
   document.getElementById('btn-pause').textContent = paused ? 'เล่นต่อ' : 'หยุด';
 }
-function pushPoint(chart, val) {
+function pushChart(chart, vals) {
   const d = chart.data;
   d.labels.push('');
-  d.datasets[0].data.push(val);
+  vals.forEach((v, i) => d.datasets[i].data.push(v));
   if (d.labels.length > MAX_POINTS) {
     d.labels.shift();
-    d.datasets[0].data.shift();
+    d.datasets.forEach(ds => ds.data.shift());
   }
   chart.update('none');
-}
-function pushCharts(fsr, flex) {
-  if (paused) return;
-  pushPoint(fsrChart, fsr);
-  pushPoint(flexChart, flex);
-}
-
-// ── Gauges (Servo 0–180° / Flex 0–90°) ───────────────────────
-const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
-function setGauge(prefix, value, max) {
-  const ratio = Math.min(max, Math.max(0, value)) / max;
-  document.getElementById(prefix + '-arc').setAttribute('stroke-dashoffset', ARC_LEN * (1 - ratio));
-  document.getElementById(prefix + '-needle').setAttribute('transform',
-    `rotate(${-90 + ratio * 180} 100 105)`);
-  document.getElementById(prefix + '-text').textContent = value + '°';
-}
-function updateLock(locked) {
-  const el = document.getElementById('lock-badge');
-  el.className = 'lock-badge ' + (locked ? 'lock-on' : 'lock-off');
-  el.textContent = locked ? 'ล็อกอยู่' : 'ปลดล็อก';
 }
 
 // ── Packet rate + ความสดของข้อมูล ─────────────────────────────
 let pktCount = 0, pktWindow = 0, lastPktTime = 0;
 setInterval(() => {
-  document.getElementById('rate-tag').textContent = pktWindow + ' Hz';
+  document.getElementById('val-hz').textContent = pktWindow + ' Hz';
   pktWindow = 0;
   const ageEl = document.getElementById('val-age');
   if (!lastPktTime) { ageEl.textContent = '—'; return; }
@@ -438,8 +435,14 @@ function setEspStatus(online) {
   setButtons(online);
 }
 function setButtons(en) {
-  ['btn-send','btn-open','btn-close','btn-grip50','btn-grip100']
+  ['btn-send0','btn-send1','btn-open','btn-close','btn-grip50','btn-grip100']
     .forEach(id => document.getElementById(id).disabled = !en);
+}
+
+// ── แปลงค่าเป็น array 2 ช่องเสมอ (รองรับทั้งค่าเดี่ยวเก่า + array ใหม่) ──
+function as2(v) {
+  if (Array.isArray(v)) return [v[0], v[1]];
+  return [v, undefined]; // รูปแบบเก่า: ค่าเดียว = ช่อง 1
 }
 
 // ── WebSocket ─────────────────────────────────────────────────
@@ -474,19 +477,27 @@ function handleMessage(data) {
     pktCount++; pktWindow++; lastPktTime = Date.now();
     document.getElementById('val-pkts').textContent = pktCount.toLocaleString() + ' แพ็กเก็ต';
 
-    const fsr  = +data.fsr  || 0;
-    const flex = +data.flex || 0;
-    const mic  = +data.mic  || 0;
+    const fsr   = as2(data.fsr);
+    const flex  = as2(data.flex);
+    const servo = as2(data.servo);
+    const lock  = as2(data.lock);
+    const mic   = +data.mic || 0;
 
-    document.getElementById('val-fsr').textContent  = fsr.toFixed(1);
-    document.getElementById('val-flex').textContent = flex + '°';
-    document.getElementById('val-mic').textContent  = Math.round((mic / 4095) * 100) + '%';
-    document.getElementById('mic-bar').style.width  = (mic / 4095) * 100 + '%';
+    // mic (ตัวเดียวรวม)
+    document.getElementById('val-mic').textContent = Math.round((mic / 4095) * 100) + '%';
+    document.getElementById('mic-bar').style.width = (mic / 4095) * 100 + '%';
 
-    setGauge('servo', +data.servo || 0, 180);
-    setGauge('flex',  flex, 90);
-    updateLock(!!data.lock);
-    pushCharts(fsr, flex);
+    // ต่อช่อง
+    for (let i = 0; i < 2; i++) {
+      const f = +fsr[i] || 0, x = +flex[i] || 0, s = +servo[i] || 0;
+      document.getElementById('fsr' + i).textContent = (fsr[i] === undefined) ? '—' : f.toFixed(1);
+      setGauge('servo' + i, s, 180);
+      setGauge('flex' + i, x, 90);
+      updateLock(i, !!lock[i]);
+    }
+
+    pushChart(fsrChart,  [+fsr[0] || 0, +fsr[1] || 0]);
+    pushChart(flexChart, [+flex[0] || 0, +flex[1] || 0]);
     setButtons(true);
   }
   else if (data.type === 'esp32_status') {
@@ -509,12 +520,13 @@ function send(data) {
   ws.send(msg);
   log(`→ ${msg}`, 'log-out');
 }
-function sendAngle() {
-  const angle = parseInt(document.getElementById('angle-slider').value);
+function sendAngle(ch) {
+  const angle = parseInt(document.getElementById('angle' + ch).value);
   const lock  = document.getElementById('lock-check').checked;
-  send({ type: 'command', action: 'angle', angle, lock });
+  send({ type: 'command', action: 'angle', ch, angle, lock });
 }
 function quickCmd(action, intensity = 100) {
+  // ไม่ใส่ ch = สั่งทั้ง 2 ช่องพร้อมกัน
   send({ type: 'command', action, intensity });
 }
 
