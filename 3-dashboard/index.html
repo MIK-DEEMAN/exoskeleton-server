@@ -481,11 +481,10 @@ function handleMessage(data) {
     const flex  = as2(data.flex);
     const servo = as2(data.servo);
     const lock  = as2(data.lock);
-    const mic   = +data.mic || 0;
-
-    // mic (ตัวเดียวรวม)
-    document.getElementById('val-mic').textContent = Math.round((mic / 4095) * 100) + '%';
-    document.getElementById('mic-bar').style.width = (mic / 4095) * 100 + '%';
+    // mic = ระดับเสียง 0–100% จากไมค์ INMP441 (I2S)
+    const mic = Math.min(100, Math.max(0, +data.mic || 0));
+    document.getElementById('val-mic').textContent = Math.round(mic) + '%';
+    document.getElementById('mic-bar').style.width = mic + '%';
 
     // ต่อช่อง
     for (let i = 0; i < 2; i++) {
