@@ -66,7 +66,7 @@ const int WIFI_TIMEOUT_MS  = 20000;
 
 // ── Sensor Read ──────────────────────────────────────────────
 float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
-int   readFlexDegrees(int ch) { return map(analogRead(PIN_FLEX[ch]), 1000, 3500, 0, 90); }
+int   readFlexDegrees(int ch) { return constrain(map(analogRead(PIN_FLEX[ch]), 1000, 3500, 0, 90), 0, 90); }
 
 // อ่านไมค์ INMP441 ผ่าน I2S → คำนวณ RMS → คืนค่าระดับเสียง 0–100%
 int readMicLevel() {
@@ -105,17 +105,18 @@ void moveAll(int angle, bool lock) {
 
 // ── Parse & Handle Command จาก Server ───────────────────────
 void handleCommand(const String& msg) {
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   if (deserializeJson(doc, msg) != DeserializationError::Ok) return;
 
   const char* type = doc["type"];
+  if (!type) return;   // ไม่มี key "type" → กัน null deref
 
   // Manual motor command
   if (strcmp(type, "command") == 0) {
     const char* action    = doc["action"]    | "none";
     int         intensity = doc["intensity"] | 50;
     // ถ้าไม่ระบุ ch → -1 = สั่งทุกช่อง
-    int         ch        = doc.containsKey("ch") ? (int)doc["ch"] : -1;
+    int         ch        = doc["ch"].is<int>() ? (int)doc["ch"] : -1;
 
     Serial.printf("[CMD] action=%s ch=%d intensity=%d\n", action, ch, intensity);
 
@@ -150,13 +151,13 @@ void handleCommand(const String& msg) {
 void sendSensorData() {
   if (!wsConnected) return;
 
-  StaticJsonDocument<320> doc;
+  JsonDocument doc;
   doc["type"] = "sensor_data";
 
-  JsonArray fsr   = doc.createNestedArray("fsr");
-  JsonArray flex  = doc.createNestedArray("flex");
-  JsonArray servo = doc.createNestedArray("servo");
-  JsonArray lock  = doc.createNestedArray("lock");
+  JsonArray fsr   = doc["fsr"].to<JsonArray>();
+  JsonArray flex  = doc["flex"].to<JsonArray>();
+  JsonArray servo = doc["servo"].to<JsonArray>();
+  JsonArray lock  = doc["lock"].to<JsonArray>();
   for (int ch = 0; ch < NUM_CH; ch++) {
     fsr.add(readFSRNewton(ch));
     flex.add(readFlexDegrees(ch));
@@ -190,7 +191,7 @@ void onWebSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
 
     case WStype_TEXT:
       {
-        String msg = String((char*)payload).substring(0, length);
+        String msg = String((char*)payload, length);
         Serial.println("[WS] Received: " + msg);
         handleCommand(msg);
       }
@@ -266,7 +267,8 @@ void loop() {
     }
   }
 
-  // อ่านระดับเสียงไมค์ต่อเนื่อง (ดึงจาก DMA buffer ของ I2S)
+  // อ่านระดับเสียงต่อเนื่องทุก loop — readBytes จะ pace loop ที่ ~60Hz
+  // (เพียงพอต่อ WebSocket) และคอย drain DMA ให้ค่า mic สดเสมอ
   micLevel = readMicLevel();
 
   // ส่ง sensor ทุก 100ms
