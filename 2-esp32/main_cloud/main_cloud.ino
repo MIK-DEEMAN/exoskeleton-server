@@ -52,17 +52,24 @@ int16_t          micBuf[MIC_SAMPLES];
 int              micLevel = 0;          // 0–100%
 
 // ── State (ต่อช่อง) ──────────────────────────────────────────
-int           servoAngle[NUM_CH]        = { 0, 0 };
-bool          servoLocked[NUM_CH]       = { false, false };
-unsigned long servoMoveStart[NUM_CH]    = { 0, 0 };
+int           servoTarget[NUM_CH]        = { 0, 0 };   // มุมเป้าหมาย
+float         servoPos[NUM_CH]           = { 0, 0 };   // มุมปัจจุบัน (ค่อยๆ ขยับ)
+bool          servoLocked[NUM_CH]        = { false, false };
+unsigned long servoLastStep[NUM_CH]      = { 0, 0 };   // เวลา step ล่าสุด
+unsigned long servoReachedAt[NUM_CH]     = { 0, 0 };   // เวลาที่ถึงเป้าหมาย
 bool          servoDetachPending[NUM_CH] = { false, false };
 
 bool          wsConnected    = false;
 unsigned long lastSensorSend = 0;
 
 const int SENSOR_INTERVAL  = 100;   // ส่งทุก 100ms
-const int SERVO_DETACH_MS  = 600;
+const int SERVO_DETACH_MS  = 600;   // พักหลังถึงเป้าหมายก่อน detach (เฉพาะไม่ล็อก)
 const int WIFI_TIMEOUT_MS  = 20000;
+
+// ── ความเร็วเซอร์โว (software stepping) ───────────────────────
+// ความเร็ว ≈ SERVO_STEP_DEG ÷ SERVO_STEP_MS  (เช่น 1°/15ms ≈ 66°/วินาที)
+const float SERVO_STEP_DEG = 1.0;   // องศาต่อ step — เพิ่ม = เร็วขึ้น (กระตุกขึ้น)
+const int   SERVO_STEP_MS  = 15;    // เวลาต่อ step (ms) — เพิ่ม = ช้าลง (นุ่มขึ้น)
 
 // ── Sensor Read ──────────────────────────────────────────────
 float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
@@ -81,26 +88,51 @@ int readMicLevel() {
 }
 
 // ── Servo Control (non-blocking) ต่อช่อง ─────────────────────
+// ตั้งเป้าหมายอย่างเดียว — การขยับจริงทำใน stepServos() เพื่อคุมความเร็ว
 void moveServo(int ch, int angle, bool lock) {
   if (ch < 0 || ch >= NUM_CH) return;
-  angle = constrain(angle, 0, 180);
-  if (!myServo[ch].attached()) myServo[ch].attach(PIN_SERVO[ch]);
-  myServo[ch].write(angle);
-  servoAngle[ch]  = angle;
+  servoTarget[ch] = constrain(angle, 0, 180);
   servoLocked[ch] = lock;
+  if (!myServo[ch].attached()) myServo[ch].attach(PIN_SERVO[ch]);
+  servoDetachPending[ch] = false;   // จะตั้งใหม่เมื่อขยับถึงเป้าหมาย (ถ้าไม่ล็อก)
 
-  if (!lock) {
-    servoMoveStart[ch]     = millis();
+  // อยู่ที่เป้าหมายอยู่แล้ว + ไม่ล็อก → เริ่มจับเวลา detach ทันที
+  if (!lock && (int)roundf(servoPos[ch]) == servoTarget[ch]) {
     servoDetachPending[ch] = true;
-  } else {
-    servoDetachPending[ch] = false;
+    servoReachedAt[ch]     = millis();
   }
-  Serial.printf("[SERVO] ch=%d angle=%d lock=%d\n", ch, angle, lock);
+  Serial.printf("[SERVO] ch=%d target=%d lock=%d\n", ch, servoTarget[ch], lock);
 }
 
 // สั่งทุกช่อง (เมื่อ command ไม่ระบุ ch)
 void moveAll(int angle, bool lock) {
   for (int ch = 0; ch < NUM_CH; ch++) moveServo(ch, angle, lock);
+}
+
+// ── ขยับเซอร์โวเข้าหาเป้าหมายทีละ step (คุมความเร็ว) ─────────
+void stepServos() {
+  unsigned long now = millis();
+  for (int ch = 0; ch < NUM_CH; ch++) {
+    // ยังไม่ถึงเป้าหมาย → ขยับทีละ step ตามจังหวะเวลา
+    if ((int)roundf(servoPos[ch]) != servoTarget[ch] && now - servoLastStep[ch] >= SERVO_STEP_MS) {
+      servoLastStep[ch] = now;
+      float diff = servoTarget[ch] - servoPos[ch];
+      servoPos[ch] += constrain(diff, -SERVO_STEP_DEG, SERVO_STEP_DEG);
+      if (myServo[ch].attached()) myServo[ch].write((int)roundf(servoPos[ch]));
+
+      // เพิ่งถึงเป้าหมาย + ไม่ล็อก → เริ่มจับเวลา detach
+      if ((int)roundf(servoPos[ch]) == servoTarget[ch] && !servoLocked[ch]) {
+        servoDetachPending[ch] = true;
+        servoReachedAt[ch]     = now;
+      }
+    }
+
+    // detach หลังถึงเป้าหมายและพัก SERVO_DETACH_MS (เฉพาะไม่ล็อก)
+    if (servoDetachPending[ch] && now - servoReachedAt[ch] >= SERVO_DETACH_MS) {
+      myServo[ch].detach();
+      servoDetachPending[ch] = false;
+    }
+  }
 }
 
 // ── Parse & Handle Command จาก Server ───────────────────────
@@ -142,8 +174,8 @@ void handleCommand(const String& msg) {
     if (text.indexOf("เปิด")  >= 0) moveAll(0,   false);
     if (text.indexOf("ปิด")   >= 0 || text.indexOf("กำ") >= 0) moveAll(180, true);
     if (text.indexOf("กลาง")  >= 0) moveAll(90,  true);
-    if (text.indexOf("ล็อก")  >= 0) for (int ch = 0; ch < NUM_CH; ch++) servoLocked[ch] = true;
-    if (text.indexOf("ปล่อย") >= 0) for (int ch = 0; ch < NUM_CH; ch++) moveServo(ch, servoAngle[ch], false);
+    if (text.indexOf("ล็อก")  >= 0) for (int ch = 0; ch < NUM_CH; ch++) moveServo(ch, (int)roundf(servoPos[ch]), true);
+    if (text.indexOf("ปล่อย") >= 0) for (int ch = 0; ch < NUM_CH; ch++) moveServo(ch, servoTarget[ch], false);
   }
 }
 
@@ -161,7 +193,7 @@ void sendSensorData() {
   for (int ch = 0; ch < NUM_CH; ch++) {
     fsr.add(readFSRNewton(ch));
     flex.add(readFlexDegrees(ch));
-    servo.add(servoAngle[ch]);
+    servo.add((int)roundf(servoPos[ch]));   // รายงานมุมปัจจุบันจริง (ขยับนุ่ม)
     lock.add(servoLocked[ch]);
   }
 
@@ -259,13 +291,7 @@ void setup() {
 void loop() {
   wsClient.loop();   // ต้องเรียกทุก loop — จัดการ reconnect ให้อัตโนมัติ
 
-  // Servo detach (non-blocking) ต่อช่อง
-  for (int ch = 0; ch < NUM_CH; ch++) {
-    if (servoDetachPending[ch] && millis() - servoMoveStart[ch] >= SERVO_DETACH_MS) {
-      myServo[ch].detach();
-      servoDetachPending[ch] = false;
-    }
-  }
+  stepServos();   // ขยับเซอร์โวตามความเร็วที่ตั้ง + จัดการ detach
 
   // อ่านระดับเสียงต่อเนื่องทุก loop — readBytes จะ pace loop ที่ ~60Hz
   // (เพียงพอต่อ WebSocket) และคอย drain DMA ให้ค่า mic สดเสมอ
