@@ -19,7 +19,7 @@
 #include <ESP_I2S.h>   // ESP32 core 3.x — I2S สำหรับไมค์ INMP441
 
 // ── WiFi Config ─────────────────────────────────────────────
-const char* WIFI_SSID     = "OPPO A5 2020 (MIK)";   // ← แก้
+const char* WIFI_SSID     = "OPPO A57 (MIK)";   // ← แก้
 const char* WIFI_PASSWORD = "yourfriends";   // ← แก้
 
 // ── Railway Server Config ────────────────────────────────────
