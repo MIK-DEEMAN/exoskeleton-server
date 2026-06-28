@@ -19,8 +19,8 @@
 #include <ESP_I2S.h>   // ESP32 core 3.x — I2S สำหรับไมค์ INMP441
 
 // ── WiFi Config ─────────────────────────────────────────────
-const char* WIFI_SSID     = "YOUR_HOTSPOT_NAME";   // ← แก้
-const char* WIFI_PASSWORD = "YOUR_HOTSPOT_PASS";   // ← แก้
+const char* WIFI_SSID     = "OPPO A5 2020 (MIK)";   // ← แก้
+const char* WIFI_PASSWORD = "yourfriends";   // ← แก้
 
 // ── Railway Server Config ────────────────────────────────────
 const char* WS_HOST = "exoskeleton-server-production.up.railway.app"; // ← Railway domain
@@ -65,7 +65,7 @@ const int SERVO_DETACH_MS  = 600;
 const int WIFI_TIMEOUT_MS  = 20000;
 
 // ── Sensor Read ──────────────────────────────────────────────
-float readFSRNewton(int ch)   { return analogRead(PIN_FSR[ch])  * (50.0 / 4095.0); }
+float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
 int   readFlexDegrees(int ch) { return map(analogRead(PIN_FLEX[ch]), 1000, 3500, 0, 90); }
 
 // อ่านไมค์ INMP441 ผ่าน I2S → คำนวณ RMS → คืนค่าระดับเสียง 0–100%
