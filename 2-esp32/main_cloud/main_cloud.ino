@@ -76,10 +76,14 @@ float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0
 int   readFlexDegrees(int ch) { return constrain(map(analogRead(PIN_FLEX[ch]), 1000, 3500, 0, 90), 0, 90); }
 
 // อ่านไมค์ INMP441 ผ่าน I2S → คำนวณ RMS → คืนค่าระดับเสียง 0–100%
+// แบบ non-blocking: อ่านเฉพาะข้อมูลที่พร้อมแล้ว ไม่หยุดรอ (กัน loop ค้าง)
 int readMicLevel() {
-  size_t bytes = I2S.readBytes((char*)micBuf, sizeof(micBuf));
+  int avail = I2S.available();
+  if (avail <= 0) return micLevel;      // ยังไม่มีข้อมูล → คงค่าเดิม ไม่บล็อก
+  size_t want  = min((size_t)avail, sizeof(micBuf));
+  size_t bytes = I2S.readBytes((char*)micBuf, want);
   int n = bytes / 2;
-  if (n == 0) return micLevel;          // ไม่มีข้อมูล → คงค่าเดิม
+  if (n == 0) return micLevel;
   double sum = 0;
   for (int i = 0; i < n; i++) sum += (double)micBuf[i] * micBuf[i];
   double rms = sqrt(sum / n);
