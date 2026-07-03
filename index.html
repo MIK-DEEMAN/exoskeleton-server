@@ -530,23 +530,31 @@ function quickCmd(action, intensity = 100) {
 }
 
 // ── Voice Command ─────────────────────────────────────────────
-let recognition, isListening = false;
+const VOICE_LISTEN_MS = 5000;   // เวลาฟังเสียงต่อครั้ง (5 วินาที)
+let recognition, voiceActive = false, voiceTimer = null, voiceEndAt = 0;
+
 function toggleVoice() {
   if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
     alert('ใช้ Chrome เพื่อรองรับ Voice Command');
     return;
   }
-  if (isListening) { recognition?.stop(); return; }
+  if (voiceActive) { stopVoice(); return; }   // กดซ้ำ = หยุดก่อนเวลา
 
+  voiceActive = true;
+  voiceEndAt  = Date.now() + VOICE_LISTEN_MS;
+  document.getElementById('mic-btn').classList.add('on');
+  startRecognition();
+  voiceTimer = setTimeout(stopVoice, VOICE_LISTEN_MS);   // หยุดอัตโนมัติหลัง 5 วิ
+}
+
+function startRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SR();
   recognition.lang = 'th-TH';
   recognition.interimResults = true;
-  recognition.continuous = false;
+  recognition.continuous = true;
 
   recognition.onstart = () => {
-    isListening = true;
-    document.getElementById('mic-btn').classList.add('on');
     document.getElementById('voice-text').textContent = '🎙 กำลังฟัง...';
   };
 
@@ -562,12 +570,28 @@ function toggleVoice() {
     }
   };
 
-  recognition.onend = () => {
-    isListening = false;
-    document.getElementById('mic-btn').classList.remove('on');
+  recognition.onerror = (ev) => {
+    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+      stopVoice();
+      alert('ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน — กด Allow ตอนเบราว์เซอร์ถาม');
+    }
+    // no-speech / aborted → ปล่อยให้ onend จัดการฟังต่อ
   };
 
-  recognition.start();
+  // ถ้า recognition หยุดเองตอนเงียบ แต่ยังไม่ครบ 5 วิ → เริ่มฟังต่อ
+  recognition.onend = () => {
+    if (voiceActive && Date.now() < voiceEndAt) startRecognition();
+  };
+
+  try { recognition.start(); } catch (e) {}
+}
+
+function stopVoice() {
+  voiceActive = false;
+  if (voiceTimer) { clearTimeout(voiceTimer); voiceTimer = null; }
+  document.getElementById('mic-btn').classList.remove('on');
+  document.getElementById('voice-text').textContent = 'กดไมค์แล้วพูดคำสั่งภาษาไทย';
+  try { recognition?.stop(); } catch (e) {}
 }
 
 // ── Start ─────────────────────────────────────────────────────
