@@ -170,14 +170,13 @@ void handleCommand(const String& msg) {
     }
   }
 
-  // Voice command — มีแค่ "เริ่ม" (กำมือ) และ "หยุด" (ค้างตำแหน่งทันที)
+  // Voice command — "กำมือ" = 0°, "กลางมือ" = 180°
   else if (strcmp(type, "voice") == 0) {
     String text = doc["text"] | "";
     Serial.println("[VOICE] " + text);
 
-    if (text.indexOf("เริ่ม") >= 0) moveAll(180, true);   // เริ่ม = กำมือ (180° ล็อก)
-    if (text.indexOf("หยุด")  >= 0)                        // หยุด = ค้างตำแหน่งปัจจุบันทันที
-      for (int ch = 0; ch < NUM_CH; ch++) moveServo(ch, (int)roundf(servoPos[ch]), true);
+    if (text.indexOf("กลางมือ") >= 0) moveAll(180, true);      // กลางมือ = 180° (เช็กก่อน)
+    else if (text.indexOf("กำมือ") >= 0) moveAll(0, true);     // กำมือ = 0°
   }
 }
 
