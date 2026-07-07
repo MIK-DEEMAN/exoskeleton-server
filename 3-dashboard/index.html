@@ -93,14 +93,7 @@ body {
 
 .stat-value { font-size: 28px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .stat-unit  { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
-.stat-accent-purple .stat-value { color: var(--purple); }
 .stat-accent-green  .stat-value { color: var(--green); }
-
-/* ── Mic level bar ── */
-.level-bar  { height: 6px; background: rgba(255,255,255,.07); border-radius: 3px; margin-top: 10px; overflow: hidden; }
-.level-fill { height: 100%; width: 0%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
-  transition: width .12s linear; }
 
 /* ── Gauges ── */
 .gauge-wrap { display: flex; align-items: flex-start; justify-content: space-around; gap: 8px; flex-wrap: wrap; }
@@ -189,7 +182,7 @@ canvas { width: 100% !important; }
 <div class="header">
   <div>
     <h1>Finger Exoskeleton</h1>
-    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2 · Flex×2) · Railway WebSocket</div>
+    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2) · Railway WebSocket</div>
   </div>
   <div class="pills">
     <div class="status-pill status-disconnected" id="ws-status">
@@ -204,14 +197,8 @@ canvas { width: 100% !important; }
 <!-- ═══ Two Channel Cards ═══ -->
 <div class="grid grid-two" id="channel-cards"></div>
 
-<!-- ═══ Mic + Data status ═══ -->
-<div class="grid grid-stats">
-  <div class="card stat-accent-purple">
-    <div class="card-label">เสียง (Mic)</div>
-    <div class="stat-value" id="val-mic">—</div>
-    <div class="stat-unit">ระดับสัญญาณ</div>
-    <div class="level-bar"><div class="level-fill" id="mic-bar"></div></div>
-  </div>
+<!-- ═══ Data status ═══ -->
+<div class="grid grid-two">
   <div class="card stat-accent-green">
     <div class="card-label">สถานะการส่งข้อมูล</div>
     <div class="stat-value" id="val-age" style="font-size:24px">—</div>
@@ -224,19 +211,13 @@ canvas { width: 100% !important; }
   </div>
 </div>
 
-<!-- ═══ Charts (FSR / Flex) — each 2 series ═══ -->
-<div class="grid grid-two">
-  <div class="card">
-    <div class="meta-row" style="margin-bottom:10px">
-      <div class="card-label" style="margin:0">FSR — แรงกด (N)</div>
-      <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">หยุด</button>
-    </div>
-    <div class="chart-box"><canvas id="fsr-chart"></canvas></div>
+<!-- ═══ Chart (FSR) — 2 series ═══ -->
+<div class="card" style="margin-bottom:12px">
+  <div class="meta-row" style="margin-bottom:10px">
+    <div class="card-label" style="margin:0">FSR — แรงกด (N)</div>
+    <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">หยุด</button>
   </div>
-  <div class="card">
-    <div class="card-label" style="margin-bottom:10px">Flex — มุมงอนิ้ว (°)</div>
-    <div class="chart-box"><canvas id="flex-chart"></canvas></div>
-  </div>
+  <div class="chart-box"><canvas id="fsr-chart"></canvas></div>
 </div>
 
 <!-- ═══ Controls (per-channel) + Voice ═══ -->
@@ -299,21 +280,20 @@ const SERVER_URL = "wss://exoskeleton-server-production.up.railway.app/dashboard
 
 // ── 2 ช่อง: สีประจำช่อง ───────────────────────────────────────
 const CH = [
-  { name: 'ช่อง 1', servo: '#4f8cff', flex: '#22d3ee', cls: 'ch0' },
-  { name: 'ช่อง 2', servo: '#a78bfa', flex: '#f472b6', cls: 'ch1' },
+  { name: 'ช่อง 1', servo: '#4f8cff', cls: 'ch0' },
+  { name: 'ช่อง 2', servo: '#a78bfa', cls: 'ch1' },
 ];
 
 // ── สร้างการ์ดต่อช่อง (servo gauge + flex gauge + FSR) ────────
 const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
 document.getElementById('channel-cards').innerHTML = CH.map((c, i) => `
   <div class="card ${c.cls}">
-    <div class="ch-title"><span class="tag">${c.name}</span><h2>Servo &amp; Flex</h2></div>
+    <div class="ch-title"><span class="tag">${c.name}</span><h2>Servo</h2></div>
     <div class="gauge-wrap">
       ${gaugeSVG('servo'+i, c.servo, '0–180°')}
-      ${gaugeSVG('flex'+i,  c.flex,  '0–90°')}
     </div>
     <div class="gauge-wrap" style="margin-top:2px">
-      <div class="gauge-cap">Servo</div><div class="gauge-cap">Flex</div>
+      <div class="gauge-cap">Servo (0–180°)</div>
     </div>
     <div class="fsr-readout">
       <span class="n" id="fsr${i}" style="color:${c.servo}">—</span> <span class="u">N (FSR แรงกด)</span>
@@ -379,8 +359,6 @@ function makeChart(canvasId, yMax, series) {
 }
 const fsrChart = makeChart('fsr-chart', 50, [
   { label: 'ช่อง 1', color: CH[0].servo }, { label: 'ช่อง 2', color: CH[1].servo }]);
-const flexChart = makeChart('flex-chart', 90, [
-  { label: 'ช่อง 1', color: CH[0].flex }, { label: 'ช่อง 2', color: CH[1].flex }]);
 
 let paused = false;
 function togglePause() {
@@ -478,25 +456,18 @@ function handleMessage(data) {
     document.getElementById('val-pkts').textContent = pktCount.toLocaleString() + ' แพ็กเก็ต';
 
     const fsr   = as2(data.fsr);
-    const flex  = as2(data.flex);
     const servo = as2(data.servo);
     const lock  = as2(data.lock);
-    // mic = ระดับเสียง 0–100% จากไมค์ INMP441 (I2S)
-    const mic = Math.min(100, Math.max(0, +data.mic || 0));
-    document.getElementById('val-mic').textContent = Math.round(mic) + '%';
-    document.getElementById('mic-bar').style.width = mic + '%';
 
     // ต่อช่อง
     for (let i = 0; i < 2; i++) {
-      const f = +fsr[i] || 0, x = +flex[i] || 0, s = +servo[i] || 0;
+      const f = +fsr[i] || 0, s = +servo[i] || 0;
       document.getElementById('fsr' + i).textContent = (fsr[i] === undefined) ? '—' : f.toFixed(1);
       setGauge('servo' + i, s, 180);
-      setGauge('flex' + i, x, 90);
       updateLock(i, !!lock[i]);
     }
 
-    pushChart(fsrChart,  [+fsr[0] || 0, +fsr[1] || 0]);
-    pushChart(flexChart, [+flex[0] || 0, +flex[1] || 0]);
+    pushChart(fsrChart, [+fsr[0] || 0, +fsr[1] || 0]);
     setButtons(true);
   }
   else if (data.type === 'esp32_status') {
