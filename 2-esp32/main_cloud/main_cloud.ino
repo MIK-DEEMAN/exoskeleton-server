@@ -72,8 +72,8 @@ const int WIFI_TIMEOUT_MS  = 20000;
 //    ถ้าหมุนไม่สุดช่วงที่ต้องการ ค่อยๆ ขยายทีละนิด เช่น 950/2050 → 900/2100
 const float SERVO_SPEED_DPS = 90.0;   // ความเร็วเฉลี่ย (องศา/วินาที) — เพิ่ม = เร็วขึ้น
 const int   SERVO_UPDATE_MS = 10;     // อัปเดตทุกกี่ ms — ยิ่งน้อยยิ่งลื่น (10ms = 100Hz)
-const int   SERVO_MIN_US    = 1000;   // ความกว้างพัลส์ที่ 0°   (MG92B)
-const int   SERVO_MAX_US    = 2000;   // ความกว้างพัลส์ที่ 180° (MG92B)
+const int   SERVO_MIN_US    = 900;    // ความกว้างพัลส์ที่ 0°   (MG92B)
+const int   SERVO_MAX_US    = 2100;   // ความกว้างพัลส์ที่ 180° (MG92B)
 
 // ── Sensor Read ──────────────────────────────────────────────
 float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
