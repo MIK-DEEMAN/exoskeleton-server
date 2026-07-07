@@ -59,21 +59,21 @@ bool          servoLocked[NUM_CH]        = { false, false };
 unsigned long servoMoveStart[NUM_CH]     = { 0, 0 };   // เวลาเริ่มขยับ
 float         servoMoveDur[NUM_CH]       = { 0, 0 };   // ระยะเวลาขยับทั้งท่อน (ms)
 unsigned long servoLastUpd[NUM_CH]       = { 0, 0 };   // เวลาอัปเดตล่าสุด
-unsigned long servoReachedAt[NUM_CH]     = { 0, 0 };   // เวลาที่ถึงเป้าหมาย
-bool          servoDetachPending[NUM_CH] = { false, false };
 
 bool          wsConnected    = false;
 unsigned long lastSensorSend = 0;
 
 const int SENSOR_INTERVAL  = 100;   // ส่งทุก 100ms
-const int SERVO_DETACH_MS  = 600;   // พักหลังถึงเป้าหมายก่อน detach (เฉพาะไม่ล็อก)
 const int WIFI_TIMEOUT_MS  = 20000;
 
 // ── การเคลื่อนที่เซอร์โว (ลื่นไหล: ease-in/out + micros resolution) ──
+// ⚠️ MG92B: ช่วงพัลส์ปลอดภัย ~1000–2000µs (สเปกไม่รองรับ 500–2500
+//    การสั่งเกินช่วงทำให้ดันติดขอบกลไก กินกระแสสูง และอาการเพี้ยน)
+//    ถ้าหมุนไม่สุดช่วงที่ต้องการ ค่อยๆ ขยายทีละนิด เช่น 950/2050 → 900/2100
 const float SERVO_SPEED_DPS = 90.0;   // ความเร็วเฉลี่ย (องศา/วินาที) — เพิ่ม = เร็วขึ้น
 const int   SERVO_UPDATE_MS = 10;     // อัปเดตทุกกี่ ms — ยิ่งน้อยยิ่งลื่น (10ms = 100Hz)
-const int   SERVO_MIN_US    = 500;    // ความกว้างพัลส์ที่ 0°   (ปรับตามเซอร์โว)
-const int   SERVO_MAX_US    = 2500;   // ความกว้างพัลส์ที่ 180° (ปรับตามเซอร์โว)
+const int   SERVO_MIN_US    = 1000;   // ความกว้างพัลส์ที่ 0°   (MG92B)
+const int   SERVO_MAX_US    = 2000;   // ความกว้างพัลส์ที่ 180° (MG92B)
 
 // ── Sensor Read ──────────────────────────────────────────────
 float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
@@ -104,6 +104,8 @@ void writeServoMicros(int ch, float deg) {
 
 // ── Servo Control (non-blocking) ต่อช่อง ─────────────────────
 // ตั้งเป้าหมาย + คำนวณระยะเวลา — การขยับจริงทำใน stepServos() แบบ ease-in/out
+// หมายเหตุ: ไม่ detach อีกต่อไป — จับตำแหน่งค้างตลอด กันกลไกดันกลับ
+// แล้วสะบัดตอนสั่งครั้งถัดไป (ไม่มี position feedback)
 void moveServo(int ch, int angle, bool lock) {
   if (ch < 0 || ch >= NUM_CH) return;
   int target = constrain(angle, 0, 180);
@@ -112,13 +114,9 @@ void moveServo(int ch, int angle, bool lock) {
   servoMoveStart[ch] = millis();
   servoMoveDur[ch]   = (fabs(target - servoPos[ch]) / SERVO_SPEED_DPS) * 1000.0;  // ระยะเวลา(ms)
   servoLocked[ch]    = lock;
-  if (!myServo[ch].attached()) myServo[ch].attach(PIN_SERVO[ch], SERVO_MIN_US, SERVO_MAX_US);
-  servoDetachPending[ch] = false;   // จะตั้งใหม่เมื่อขยับถึงเป้าหมาย (ถ้าไม่ล็อก)
-
-  // อยู่ที่เป้าหมายอยู่แล้ว + ไม่ล็อก → เริ่มจับเวลา detach ทันที
-  if (!lock && servoMoveDur[ch] <= 0) {
-    servoDetachPending[ch] = true;
-    servoReachedAt[ch]     = millis();
+  if (!myServo[ch].attached()) {
+    myServo[ch].attach(PIN_SERVO[ch], SERVO_MIN_US, SERVO_MAX_US);
+    writeServoMicros(ch, servoPos[ch]);   // เริ่มพัลส์จากตำแหน่งล่าสุดที่รู้ ไม่กระโดด
   }
   Serial.printf("[SERVO] ch=%d target=%d lock=%d\n", ch, target, lock);
 }
@@ -137,24 +135,12 @@ void stepServos() {
       servoLastUpd[ch] = now;
       float t = servoMoveDur[ch] > 0 ? (now - servoMoveStart[ch]) / servoMoveDur[ch] : 1.0;
       if (t >= 1.0) {
-        servoPos[ch] = servoTarget[ch];                    // ถึงแล้ว
+        servoPos[ch] = servoTarget[ch];                    // ถึงแล้ว — ค้างตำแหน่งไว้
       } else {
         float eased = t * t * (3.0 - 2.0 * t);              // smoothstep: เริ่มช้า–เร่ง–ชะลอ
         servoPos[ch] = servoStart[ch] + (servoTarget[ch] - servoStart[ch]) * eased;
       }
       writeServoMicros(ch, servoPos[ch]);
-
-      // เพิ่งถึงเป้าหมาย + ไม่ล็อก → เริ่มจับเวลา detach
-      if (servoPos[ch] == (float)servoTarget[ch] && !servoLocked[ch]) {
-        servoDetachPending[ch] = true;
-        servoReachedAt[ch]     = now;
-      }
-    }
-
-    // detach หลังถึงเป้าหมายและพัก SERVO_DETACH_MS (เฉพาะไม่ล็อก)
-    if (servoDetachPending[ch] && now - servoReachedAt[ch] >= SERVO_DETACH_MS) {
-      myServo[ch].detach();
-      servoDetachPending[ch] = false;
     }
   }
 }
@@ -268,13 +254,12 @@ void setup() {
   Serial.begin(115200);
   pinMode(PIN_LED, OUTPUT);
 
-  // Servo init (ทุกช่อง)
+  // Servo init (ทุกช่อง) — ค้างตำแหน่ง 0° ไว้ ไม่ detach
   for (int ch = 0; ch < NUM_CH; ch++) {
     myServo[ch].attach(PIN_SERVO[ch], SERVO_MIN_US, SERVO_MAX_US);
     writeServoMicros(ch, 0);
   }
   delay(500);
-  for (int ch = 0; ch < NUM_CH; ch++) myServo[ch].detach();
 
   // I2S init สำหรับไมค์ INMP441 (RX อย่างเดียว → dout = -1)
   I2S.setPins(MIC_SCK, MIC_WS, -1, MIC_SD);
@@ -312,7 +297,7 @@ void setup() {
 void loop() {
   wsClient.loop();   // ต้องเรียกทุก loop — จัดการ reconnect ให้อัตโนมัติ
 
-  stepServos();   // ขยับเซอร์โวตามความเร็วที่ตั้ง + จัดการ detach
+  stepServos();   // ขยับเซอร์โวเข้าหาเป้าหมายแบบนุ่มลื่น
 
   // อ่านระดับเสียงต่อเนื่องทุก loop — readBytes จะ pace loop ที่ ~60Hz
   // (เพียงพอต่อ WebSocket) และคอย drain DMA ให้ค่า mic สดเสมอ
