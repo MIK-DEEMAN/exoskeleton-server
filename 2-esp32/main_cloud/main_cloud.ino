@@ -72,8 +72,8 @@ const int WIFI_TIMEOUT_MS  = 20000;
 //    ให้หดช่วงเข้า เช่น 550/2350 → 600/2300 จนเสียงหาย
 const float SERVO_SPEED_DPS = 90.0;   // ความเร็วเฉลี่ย (องศา/วินาที) — เพิ่ม = เร็วขึ้น
 const int   SERVO_UPDATE_MS = 10;     // อัปเดตทุกกี่ ms — ยิ่งน้อยยิ่งลื่น (10ms = 100Hz)
-const int   SERVO_MIN_US    = 500;    // ความกว้างพัลส์ที่ 0°   (MG92B เต็มช่วง)
-const int   SERVO_MAX_US    = 2400;   // ความกว้างพัลส์ที่ 180° (MG92B เต็มช่วง)
+const int   SERVO_MIN_US    = 550;    // ความกว้างพัลส์ที่ 0°   (MG92B เต็มช่วง)
+const int   SERVO_MAX_US    = 2350;   // ความกว้างพัลส์ที่ 180° (MG92B เต็มช่วง)
 
 // ── Sensor Read ──────────────────────────────────────────────
 float readFSRNewton(int ch)   { return (4095 - analogRead(PIN_FSR[ch]))  * (50.0 / 4095.0); }
