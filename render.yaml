@@ -1,0 +1,10 @@
+# Render Blueprint — deploy WebSocket relay server (free plan)
+# ใช้: render.com → New → Blueprint → เลือก repo นี้
+services:
+  - type: web
+    name: exoskeleton-server
+    runtime: node
+    rootDir: 1-server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free

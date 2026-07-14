@@ -22,9 +22,9 @@
 const char* WIFI_SSID     = "OPPO A57 (MIK)";   // ← แก้
 const char* WIFI_PASSWORD = "yourfriends";   // ← แก้
 
-// ── Railway Server Config ────────────────────────────────────
-const char* WS_HOST = "exoskeleton-server-production.up.railway.app"; // ← Railway domain
-const int   WS_PORT = 443;                          // Railway ใช้ HTTPS/WSS
+// ── Server Config (Render free) ──────────────────────────────
+const char* WS_HOST = "exoskeleton-server.onrender.com"; // ← Render domain
+const int   WS_PORT = 443;                          // Render ใช้ HTTPS/WSS
 const char* WS_PATH = "/esp32";                    // endpoint สำหรับ ESP32
 
 // ── Pin Config (ทั้งหมดเป็น ADC1 ใช้ร่วมกับ WiFi ได้) ────────
