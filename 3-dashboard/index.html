@@ -182,7 +182,7 @@ canvas { width: 100% !important; }
 <div class="header">
   <div>
     <h1>Finger Exoskeleton</h1>
-    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2) · Railway WebSocket</div>
+    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2) · Render WebSocket</div>
   </div>
   <div class="pills">
     <div class="status-pill status-disconnected" id="ws-status">
@@ -275,8 +275,9 @@ canvas { width: 100% !important; }
 </div>
 
 <script>
-// ── CONFIG — แก้ URL ให้ตรงกับ Railway ────────────────────────
-const SERVER_URL = "wss://exoskeleton-server.onrender.com/dashboard"; // ← Render (free)
+// ── CONFIG — Render (free tier) ───────────────────────────────
+const SERVER_URL = "wss://exoskeleton-server.onrender.com/dashboard";
+const HEALTH_URL = "https://exoskeleton-server.onrender.com/";  // ใช้ปลุก server ตอนหลับ
 
 // ── 2 ช่อง: สีประจำช่อง ───────────────────────────────────────
 const CH = [
@@ -400,10 +401,10 @@ function clearLog() {
 }
 
 // ── Status Pills + ปุ่ม ───────────────────────────────────────
-function setWsStatus(s) {
+function setWsStatus(s, txt) {
   const el = document.getElementById('ws-status');
   document.getElementById('ws-text').textContent =
-    s === 'connected' ? 'Server: Online' : s === 'connecting' ? 'Server: กำลังเชื่อมต่อ' : 'Server: Offline';
+    txt || (s === 'connected' ? 'Server: Online' : s === 'connecting' ? 'Server: กำลังเชื่อมต่อ' : 'Server: Offline');
   el.className = 'status-pill status-' + s;
 }
 function setEspStatus(online) {
@@ -424,13 +425,28 @@ function as2(v) {
 }
 
 // ── WebSocket ─────────────────────────────────────────────────
-let ws;
+// Render free tier: server หลับเมื่อไม่มีการใช้งาน ~15 นาที
+// ตื่นครั้งแรกใช้เวลา ~50 วิ → ยิง HTTP ปลุกควบคู่ + retry จนกว่าจะติด
+let ws, connectTries = 0;
+
 function connect() {
-  setWsStatus('connecting');
-  log('→ Connecting to server...');
+  connectTries++;
+  if (connectTries === 1) {
+    setWsStatus('connecting');
+    log('→ Connecting to server...');
+  } else {
+    setWsStatus('connecting', 'Server: กำลังปลุก...');
+    log(`→ ปลุก server + ลองใหม่ (ครั้งที่ ${connectTries}) — Render free ตื่นใน ~50 วิ`);
+  }
+  fetch(HEALTH_URL).catch(() => {});   // HTTP ping ช่วยปลุก instance ที่หลับอยู่
+
   ws = new WebSocket(SERVER_URL);
 
-  ws.onopen = () => { setWsStatus('connected'); log('Server connected', 'log-in'); };
+  ws.onopen = () => {
+    connectTries = 0;
+    setWsStatus('connected');
+    log('Server connected', 'log-in');
+  };
 
   ws.onmessage = (e) => {
     let data;
@@ -440,13 +456,16 @@ function connect() {
   };
 
   ws.onclose = () => {
-    setWsStatus('disconnected');
     setEspStatus(false);
-    log('Disconnected — reconnecting in 3s...', 'log-err');
+    if (connectTries === 0) {
+      // เคยต่อติดแล้วหลุด → แจ้งชัดเจน
+      setWsStatus('disconnected');
+      log('Disconnected — reconnecting in 3s...', 'log-err');
+    }
     setTimeout(connect, 3000);
   };
 
-  ws.onerror = () => log('Connection error', 'log-err');
+  ws.onerror = () => { if (connectTries <= 1) log('Connection error', 'log-err'); };
 }
 
 // ── Handle Message จาก Server ────────────────────────────────
