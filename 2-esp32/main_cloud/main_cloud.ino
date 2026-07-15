@@ -176,13 +176,13 @@ void handleCommand(const String& msg) {
     }
   }
 
-  // Voice command — "กำมือ" = 0°, "กลางมือ" = 180°
+  // Voice command — "จับ" = กำนิ้วเข้าจับ (0°), "ปล่อย" = คลายนิ้วกลับ (180°)
   else if (strcmp(type, "voice") == 0) {
     String text = doc["text"] | "";
     Serial.println("[VOICE] " + text);
 
-    if (text.indexOf("กลางมือ") >= 0) moveAll(180, true);      // กลางมือ = 180° (เช็กก่อน)
-    else if (text.indexOf("กำมือ") >= 0) moveAll(0, true);     // กำมือ = 0°
+    if (text.indexOf("ปล่อย") >= 0) moveAll(180, false);   // ปล่อย = คลายนิ้ว (เช็กก่อน)
+    else if (text.indexOf("จับ") >= 0) moveAll(0, true);   // จับ = กำนิ้ว ค้างแรงไว้
   }
 }
 
