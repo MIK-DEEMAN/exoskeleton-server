@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Finger Exoskeleton Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ── Reset & Variables ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -102,8 +101,6 @@ body {
 .gauge-cap  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .gauge-val  { font-size: 20px; font-weight: 600; fill: var(--text); }
 .fsr-readout { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
-.fsr-readout .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.fsr-readout .u { font-size: 11px; color: var(--muted); }
 .lock-badge {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
@@ -167,10 +164,6 @@ input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
 .log-sys { color: var(--muted); }
 .log-err { color: var(--red); }
 
-/* ── Chart ── */
-.chart-box { position: relative; height: 160px; }
-canvas { width: 100% !important; }
-
 /* ── meta ── */
 .meta-row { display: flex; justify-content: space-between; align-items: center; }
 .rate-tag { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -182,7 +175,7 @@ canvas { width: 100% !important; }
 <div class="header">
   <div>
     <h1>Finger Exoskeleton</h1>
-    <div class="sub">ESP32 · 2 ช่อง (Servo×2 · FSR×2) · Render WebSocket</div>
+    <div class="sub">ESP32 · 2 ช่อง (Servo×2) · Render WebSocket</div>
   </div>
   <div class="pills">
     <div class="status-pill status-disconnected" id="ws-status">
@@ -209,15 +202,6 @@ canvas { width: 100% !important; }
     <div class="stat-value" id="val-hz" style="font-size:24px">— Hz</div>
     <div class="stat-unit">ปกติ ~10 Hz</div>
   </div>
-</div>
-
-<!-- ═══ Chart (FSR) — 2 series ═══ -->
-<div class="card" style="margin-bottom:12px">
-  <div class="meta-row" style="margin-bottom:10px">
-    <div class="card-label" style="margin:0">FSR — แรงกด (N)</div>
-    <button style="font-size:11px;padding:4px 12px" onclick="togglePause()" id="btn-pause">หยุด</button>
-  </div>
-  <div class="chart-box"><canvas id="fsr-chart"></canvas></div>
 </div>
 
 <!-- ═══ Controls (per-channel) + Voice ═══ -->
@@ -297,8 +281,7 @@ document.getElementById('channel-cards').innerHTML = CH.map((c, i) => `
       <div class="gauge-cap">Servo (0–180°)</div>
     </div>
     <div class="fsr-readout">
-      <span class="n" id="fsr${i}" style="color:${c.servo}">—</span> <span class="u">N (FSR แรงกด)</span>
-      <div><span class="lock-badge lock-off" id="lock${i}">ปลดล็อก</span></div>
+      <span class="lock-badge lock-off" id="lock${i}">ปลดล็อก</span>
     </div>
   </div>
 `).join('');
@@ -334,47 +317,6 @@ function updateLock(i, locked) {
   const el = document.getElementById('lock' + i);
   el.className = 'lock-badge ' + (locked ? 'lock-on' : 'lock-off');
   el.textContent = locked ? 'ล็อกอยู่' : 'ปลดล็อก';
-}
-
-// ── Charts: FSR (2 series) + Flex (2 series) ─────────────────
-const MAX_POINTS = 80;
-function makeChart(canvasId, yMax, series) {
-  return new Chart(document.getElementById(canvasId), {
-    type: 'line',
-    data: { labels: [], datasets: series.map(s => ({
-      label: s.label, data: [], borderColor: s.color,
-      backgroundColor: 'transparent', tension: 0.35, fill: false,
-      pointRadius: 0, borderWidth: 1.6
-    })) },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      interaction: { intersect: false, mode: 'index' },
-      scales: {
-        x: { display: false },
-        y: { min: 0, max: yMax, ticks: { color: '#8a8f9c', font: { size: 10 } },
-             grid: { color: 'rgba(255,255,255,0.05)' } }
-      },
-      plugins: { legend: { labels: { color: '#8a8f9c', font: { size: 11 }, boxWidth: 16 } } }
-    }
-  });
-}
-const fsrChart = makeChart('fsr-chart', 50, [
-  { label: 'ช่อง 1', color: CH[0].servo }, { label: 'ช่อง 2', color: CH[1].servo }]);
-
-let paused = false;
-function togglePause() {
-  paused = !paused;
-  document.getElementById('btn-pause').textContent = paused ? 'เล่นต่อ' : 'หยุด';
-}
-function pushChart(chart, vals) {
-  const d = chart.data;
-  d.labels.push('');
-  vals.forEach((v, i) => d.datasets[i].data.push(v));
-  if (d.labels.length > MAX_POINTS) {
-    d.labels.shift();
-    d.datasets.forEach(ds => ds.data.shift());
-  }
-  chart.update('none');
 }
 
 // ── Packet rate + ความสดของข้อมูล ─────────────────────────────
@@ -474,19 +416,13 @@ function handleMessage(data) {
     pktCount++; pktWindow++; lastPktTime = Date.now();
     document.getElementById('val-pkts').textContent = pktCount.toLocaleString() + ' แพ็กเก็ต';
 
-    const fsr   = as2(data.fsr);
     const servo = as2(data.servo);
     const lock  = as2(data.lock);
 
-    // ต่อช่อง
     for (let i = 0; i < 2; i++) {
-      const f = +fsr[i] || 0, s = +servo[i] || 0;
-      document.getElementById('fsr' + i).textContent = (fsr[i] === undefined) ? '—' : f.toFixed(1);
-      setGauge('servo' + i, s, 180);
+      setGauge('servo' + i, +servo[i] || 0, 180);
       updateLock(i, !!lock[i]);
     }
-
-    pushChart(fsrChart, [+fsr[0] || 0, +fsr[1] || 0]);
     setButtons(true);
   }
   else if (data.type === 'esp32_status') {
