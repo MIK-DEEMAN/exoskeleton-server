@@ -86,6 +86,9 @@ wss.on("connection", (ws, req) => {
   if (!type) {
     console.log(`[WS] ปฏิเสธการเชื่อมต่อ path "${path}" | IP: ${ip}`);
     ws.close(1008, "unknown path");
+    // proxy ของ Render ไม่ส่ง close frame ต่อให้ทันที ทำให้ socket ค้างเปิด
+    // กินสล็อตทิ้งไว้ — บังคับตัดซ้ำถ้ายังไม่ปิดเองใน 1 วินาที
+    setTimeout(() => { if (ws.readyState !== WebSocket.CLOSED) ws.terminate(); }, 1000);
     return;
   }
 
