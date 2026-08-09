@@ -21,9 +21,13 @@ app.get("/", (req, res) => {
   res.json({
     status : "ok",
     clients: {
-      esp32    : esp32Client     ? "connected" : "disconnected",
+      esp32    : esp32IsLive()   ? "connected" : "disconnected",
       dashboard: dashboardClients.size + " connected",
     },
+    esp32LastSeen: esp32LastSeen
+      ? Math.round((Date.now() - esp32LastSeen) / 1000) + "s ago"
+      : "never",
+    esp32SocketOpen: !!esp32Client,
     uptime: Math.floor(process.uptime()) + "s",
   });
 });
@@ -37,13 +41,27 @@ const wss = new WebSocket.Server({ server: httpServer });
 
 // ── Client Registry ──────────────────────────────────────────
 let esp32Client      = null;          // มีได้แค่ 1 ตัว
+let esp32LastSeen    = 0;             // เวลาที่ได้รับข้อมูลจากบอร์ดครั้งล่าสุด (0 = ยังไม่เคย)
+let esp32ConnectedAt = 0;             // เวลาที่ socket ต่อเข้ามา (ใช้เป็นช่วงผ่อนผัน)
 let dashboardClients = new Set();     // มีได้หลายตัว
+
+// บอร์ดส่ง sensor_data ทุก 100 ms — ถ้าเงียบเกินเท่านี้ถือว่าไม่มีบอร์ดจริง
+const ESP32_SILENCE_MS = 10000;
 
 // ── Helper: ส่ง JSON ──────────────────────────────────────────
 function sendJSON(client, data) {
   if (client && client.readyState === WebSocket.OPEN) {
     client.send(JSON.stringify(data));
   }
+}
+
+// ── Helper: บอร์ด "ออนไลน์จริง" ไหม ──────────────────────────
+// ตัดสินจากข้อมูลที่ส่งเข้ามาจริง ไม่ใช่จากสถานะ socket
+// เพราะ proxy ของ Render ตอบ pong แทนบอร์ดที่ตายไปแล้วได้
+// ทำให้ ping/pong ระดับ WebSocket เชื่อถือไม่ได้ (เกิด "ทะเบียนผี")
+function esp32IsLive() {
+  if (!esp32Client || !esp32LastSeen) return false;   // ยังไม่เคยส่งข้อมูล = ยังไม่นับ
+  return (Date.now() - esp32LastSeen) < ESP32_SILENCE_MS;
 }
 
 // ── Helper: broadcast ไปทุก Dashboard ────────────────────────
@@ -67,16 +85,18 @@ wss.on("connection", (ws, req) => {
     // เห็นว่าตัวเองไม่ใช่ตัวที่ลงทะเบียนอยู่ แล้วข้ามการล้างทะเบียนไป
     // ใช้ terminate() ไม่ใช่ close() เพราะ socket เก่ามักเป็น TCP ที่ตายแล้ว
     // (บอร์ดหลุด WiFi) จะไม่ตอบ close handshake ทำให้ค้างรอจนถึง keepalive
-    const prevEsp32 = esp32Client;
-    esp32Client = ws;
+    const prevEsp32  = esp32Client;
+    esp32Client      = ws;
+    esp32LastSeen    = 0;            // ตัวใหม่ต้องพิสูจน์ตัวเองด้วยข้อมูลจริง
+    esp32ConnectedAt = Date.now();
     if (prevEsp32) {
       prevEsp32.terminate();
       console.log("[WS] Previous ESP32 replaced");
     }
 
-    // แจ้ง Dashboard ว่า ESP32 online
-    broadcastToDashboards({ type: "esp32_status", status: "connected" });
-    console.log("[WS] ESP32 registered");
+    // ยังไม่แจ้งว่า online ตรงนี้ — รอให้บอร์ดส่งข้อมูลจริงมาก่อน
+    // (socket ที่เปิดค้างโดยไม่มีบอร์ดจริงจะไม่ทำให้ dashboard ขึ้น Online)
+    console.log("[WS] ESP32 socket registered — รอข้อมูลยืนยัน");
   } else {
     dashboardClients.add(ws);
     console.log(`[WS] Dashboard added (total: ${dashboardClients.size})`);
@@ -84,7 +104,7 @@ wss.on("connection", (ws, req) => {
     // ส่งสถานะ ESP32 ปัจจุบันให้ Dashboard ใหม่
     sendJSON(ws, {
       type  : "esp32_status",
-      status: esp32Client ? "connected" : "disconnected",
+      status: esp32IsLive() ? "connected" : "disconnected",
     });
   }
 
@@ -101,13 +121,23 @@ wss.on("connection", (ws, req) => {
     console.log(`[WS] ${type} → ${data.type}`);
 
     if (type === "esp32") {
+      if (ws !== esp32Client) return;   // socket เก่าที่ถูกแทนที่ไปแล้ว
+
+      // ข้อมูลจริงจากบอร์ด = หลักฐานว่ายังมีชีวิต
+      const wasLive = esp32IsLive();
+      esp32LastSeen = Date.now();
+      if (!wasLive) {
+        broadcastToDashboards({ type: "esp32_status", status: "connected" });
+        console.log("[WS] ESP32 online — ยืนยันจากข้อมูลจริง");
+      }
+
       // ESP32 ส่ง sensor_data → relay ไปทุก Dashboard
       broadcastToDashboards(data);
 
     } else {
       // Dashboard ส่ง command / voice → relay ไป ESP32
       if (data.type === "command" || data.type === "voice") {
-        if (esp32Client) {
+        if (esp32IsLive()) {
           sendJSON(esp32Client, data);
         } else {
           // ESP32 ไม่ได้ต่ออยู่ → แจ้ง Dashboard กลับ
@@ -130,9 +160,18 @@ wss.on("connection", (ws, req) => {
         console.log("[WS] Stale ESP32 socket closed — ทะเบียนตัวใหม่ยังอยู่");
         return;
       }
-      esp32Client = null;
-      broadcastToDashboards({ type: "esp32_status", status: "disconnected" });
-      console.log("[WS] ESP32 disconnected");
+      const wasLive    = esp32LastSeen > 0;   // เคยแจ้ง Online ไปแล้วหรือยัง
+      esp32Client      = null;
+      esp32LastSeen    = 0;
+      esp32ConnectedAt = 0;
+      // แจ้ง Offline เฉพาะตอนที่เคยขึ้น Online จริง ๆ จะได้ไม่รบกวน dashboard
+      // ด้วยข้อความจาก socket ผีที่ไม่เคยส่งข้อมูลอะไรมาเลย
+      if (wasLive) {
+        broadcastToDashboards({ type: "esp32_status", status: "disconnected" });
+        console.log("[WS] ESP32 disconnected");
+      } else {
+        console.log("[WS] ESP32 socket ปิด (ไม่เคยส่งข้อมูล — ไม่ใช่บอร์ดจริง)");
+      }
     } else {
       dashboardClients.delete(ws);
       console.log(`[WS] Dashboard disconnected (remaining: ${dashboardClients.size})`);
@@ -157,7 +196,30 @@ const keepalive = setInterval(() => {
   });
 }, 30000); // ทุก 30 วิ
 
-wss.on("close", () => clearInterval(keepalive));
+// ── ตรวจว่าบอร์ดเงียบหายไปไหม ─────────────────────────────────
+// ping/pong พึ่งไม่ได้เพราะ proxy ตอบแทนได้ จึงวัดจากข้อมูลจริงแทน
+// บอร์ดที่ทำงานปกติส่งทุก 100 ms — เงียบเกิน 10 วิ = ตัดทิ้งเลย
+const livenessCheck = setInterval(() => {
+  if (!esp32Client) return;
+  // ยังไม่เคยส่งข้อมูล → นับจากตอนต่อเข้ามา (ให้เวลาพิสูจน์ตัวเอง)
+  const silent = Date.now() - (esp32LastSeen || esp32ConnectedAt);
+  if (silent < ESP32_SILENCE_MS) return;
+
+  console.log(`[WS] ESP32 เงียบมา ${Math.round(silent / 1000)}s — ตัดการเชื่อมต่อ`);
+  const ghost = esp32Client;
+  // เคยส่งข้อมูลมาก่อน = เคยแจ้ง dashboard ว่า Online ไปแล้ว ต้องแจ้ง Offline กลับ
+  // (ใช้ esp32IsLive() ตรงนี้ไม่ได้ เพราะ ณ จุดนี้มันเป็น false เสมอโดยนิยาม)
+  const wasLive = esp32LastSeen > 0;
+  esp32Client      = null;
+  esp32LastSeen    = 0;
+  esp32ConnectedAt = 0;
+  ghost.terminate();
+  if (wasLive) {
+    broadcastToDashboards({ type: "esp32_status", status: "disconnected" });
+  }
+}, 5000);
+
+wss.on("close", () => { clearInterval(keepalive); clearInterval(livenessCheck); });
 
 console.log("[Server] WebSocket ready");
 console.log("[Server] ESP32  → connect to /esp32");

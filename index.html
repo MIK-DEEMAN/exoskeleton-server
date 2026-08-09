@@ -321,9 +321,18 @@ function updateLock(i, locked) {
 
 // ── Packet rate + ความสดของข้อมูล ─────────────────────────────
 let pktCount = 0, pktWindow = 0, lastPktTime = 0;
+const ESP_SILENCE_MS = 10000;   // บอร์ดส่งทุก 100 ms — เงียบเกินนี้ = ไม่ได้ต่ออยู่จริง
 setInterval(() => {
   document.getElementById('val-hz').textContent = pktWindow + ' Hz';
   pktWindow = 0;
+
+  // ไม่เชื่อป้ายสถานะจาก server อย่างเดียว — ถ้าไม่มีข้อมูลไหลเข้ามาจริง
+  // ให้ถือว่า Offline (กัน socket ผีที่ค้างอยู่ทำให้ขึ้น Online หลอก ๆ)
+  if (espOnline && Date.now() - Math.max(lastPktTime, espOnlineAt) > ESP_SILENCE_MS) {
+    setEspStatus(false);
+    log('ไม่มีข้อมูลจากบอร์ดเกิน 10 วินาที — ถือว่า Offline', 'log-err');
+  }
+
   const ageEl = document.getElementById('val-age');
   if (!lastPktTime) { ageEl.textContent = '—'; return; }
   const sec = (Date.now() - lastPktTime) / 1000;
@@ -349,8 +358,9 @@ function setWsStatus(s, txt) {
     txt || (s === 'connected' ? 'Server: Online' : s === 'connecting' ? 'Server: กำลังเชื่อมต่อ' : 'Server: Offline');
   el.className = 'status-pill status-' + s;
 }
-let espOnline = false;
+let espOnline = false, espOnlineAt = 0;
 function setEspStatus(online) {
+  if (online && !espOnline) espOnlineAt = Date.now();
   espOnline = online;
   const el = document.getElementById('esp-status');
   document.getElementById('esp-text').textContent = online ? 'ESP32: Online' : 'ESP32: Offline';
