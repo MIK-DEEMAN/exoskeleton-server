@@ -63,12 +63,16 @@ wss.on("connection", (ws, req) => {
 
   // ── ลงทะเบียน client ──
   if (type === "esp32") {
-    // ถ้ามี ESP32 เก่าอยู่แล้ว → ปิดก่อน
-    if (esp32Client) {
-      esp32Client.close();
-      console.log("[WS] Previous ESP32 disconnected");
-    }
+    // ลงทะเบียนตัวใหม่ "ก่อน" ตัดตัวเก่าเสมอ — event close ของตัวเก่าจะได้
+    // เห็นว่าตัวเองไม่ใช่ตัวที่ลงทะเบียนอยู่ แล้วข้ามการล้างทะเบียนไป
+    // ใช้ terminate() ไม่ใช่ close() เพราะ socket เก่ามักเป็น TCP ที่ตายแล้ว
+    // (บอร์ดหลุด WiFi) จะไม่ตอบ close handshake ทำให้ค้างรอจนถึง keepalive
+    const prevEsp32 = esp32Client;
     esp32Client = ws;
+    if (prevEsp32) {
+      prevEsp32.terminate();
+      console.log("[WS] Previous ESP32 replaced");
+    }
 
     // แจ้ง Dashboard ว่า ESP32 online
     broadcastToDashboards({ type: "esp32_status", status: "connected" });
@@ -119,6 +123,13 @@ wss.on("connection", (ws, req) => {
   // ── Disconnect ────────────────────────────────────────────────
   ws.on("close", (code, reason) => {
     if (type === "esp32") {
+      // socket เก่าที่ถูกตัวใหม่แทนที่ไปแล้ว: event close มาถึงทีหลัง
+      // ถ้าปล่อยให้ล้าง esp32Client จะเป็นการลบทะเบียนของบอร์ดตัวใหม่ทิ้ง
+      // → dashboard ขึ้น Offline และสั่งงานไม่ได้ ทั้งที่ข้อมูลยังไหลอยู่
+      if (esp32Client !== ws) {
+        console.log("[WS] Stale ESP32 socket closed — ทะเบียนตัวใหม่ยังอยู่");
+        return;
+      }
       esp32Client = null;
       broadcastToDashboards({ type: "esp32_status", status: "disconnected" });
       console.log("[WS] ESP32 disconnected");

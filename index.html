@@ -349,7 +349,9 @@ function setWsStatus(s, txt) {
     txt || (s === 'connected' ? 'Server: Online' : s === 'connecting' ? 'Server: กำลังเชื่อมต่อ' : 'Server: Offline');
   el.className = 'status-pill status-' + s;
 }
+let espOnline = false;
 function setEspStatus(online) {
+  espOnline = online;
   const el = document.getElementById('esp-status');
   document.getElementById('esp-text').textContent = online ? 'ESP32: Online' : 'ESP32: Offline';
   el.className = 'status-pill status-' + (online ? 'connected' : 'disconnected');
@@ -415,6 +417,12 @@ function handleMessage(data) {
   if (data.type === 'sensor_data') {
     pktCount++; pktWindow++; lastPktTime = Date.now();
     document.getElementById('val-pkts').textContent = pktCount.toLocaleString() + ' แพ็กเก็ต';
+
+    // มีข้อมูลไหลเข้ามา = บอร์ดออนไลน์แน่นอน เชื่อข้อมูลจริงมากกว่าข้อความสถานะ
+    if (!espOnline) {
+      setEspStatus(true);
+      log('ESP32 Online (ตรวจพบจากข้อมูลเซนเซอร์)', 'log-in');
+    }
 
     const servo = as2(data.servo);
     const lock  = as2(data.lock);
