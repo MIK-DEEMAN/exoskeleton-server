@@ -1,354 +1,159 @@
 ╔═══════════════════════════════════════════════════════════════════╗
-║                                                                   ║
-║   🖐  EXOSKELETON CLOUD SYSTEM — All-in-One Bundle                ║
-║                                                                   ║
-║   ระบบ Finger Exoskeleton ควบคุมผ่าน Cloud จากทุกที่              ║
-║                                                                   ║
+║   🖐  นิ้วกลไฟฟ้าสั่งการด้วยเสียง — Finger Exoskeleton            ║
+║   สำหรับผู้ป่วยนิ้วมืออ่อนแรง                                     ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
 
-📦 สิ่งที่อยู่ในชุดนี้ (3 โฟลเดอร์)
+═══════════════════════════════════════════════════════════════════
+  ระบบทำงานอย่างไร
+═══════════════════════════════════════════════════════════════════
 
-   1-server/           → โค้ด Server (Deploy ขึ้น Railway)
-      ├── server.js
-      ├── package.json
-      └── .gitignore
+   ESP32 + Servo×2        Render (คลาวด์)         GitHub Pages
+   ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+   │  บอร์ดจริง    │◄────►│ WebSocket    │◄────►│  Dashboard   │
+   │  (ผ่าน WiFi)  │      │ ส่งต่อข้อความ │      │  (เว็บ/มือถือ)│
+   └──────────────┘      └──────────────┘      └──────────────┘
+        /esp32                                     /dashboard
 
-   2-esp32/            → โค้ด ESP32 (Upload เข้าบอร์ด)
-      └── main_cloud.ino
-
-   3-dashboard/        → หน้าเว็บ Dashboard (Deploy ขึ้น Vercel)
-      └── index.html
-
-
-🎯 จะได้อะไรเมื่อทำเสร็จ?
-
-   ESP32 (Hotspot) ──→ Server (Railway) ──→ Dashboard (Vercel)
-   
-   เปิด Dashboard URL บนมือถือไหนก็ได้ในโลก เห็นค่า sensor real-time
-   และควบคุม Servo จากที่ไหนก็ได้
+   • บอร์ดส่งมุมเซอร์โวขึ้นคลาวด์ทุก 100 ms (10 ครั้ง/วินาที)
+   • Dashboard ส่งคำสั่งลงไปที่บอร์ด
+   • Server เป็นแค่ตัวส่งต่อ ไม่ได้เก็บข้อมูลหรือตีความคำสั่ง
+   • การรู้จำเสียงทำที่เบราว์เซอร์ (Web Speech API) แล้วแปลงเป็นคำสั่ง
+     ก่อนส่ง — ESP32 ไม่ต้องประมวลผลเสียงเอง
 
 
-⏰ เวลารวม: 3-5 ชั่วโมง (สำหรับมือใหม่)
+  URL ที่ใช้งานจริง
+  ─────────────────
+  Dashboard : https://mik-deeman.github.io/exoskeleton-server/
+  Server    : https://exoskeleton-server.onrender.com/
+  Repo      : https://github.com/MIK-DEEMAN/exoskeleton-server
 
 
 ═══════════════════════════════════════════════════════════════════
-  ⚡ QUICK START — ทำตามนี้ทีละข้อ
+  ไฟล์ในโปรเจค
 ═══════════════════════════════════════════════════════════════════
 
+  index.html            ← Dashboard ตัวจริงที่ GitHub Pages เสิร์ฟ
+                          (แก้ไฟล์นี้ = แก้เว็บที่ใช้งานจริง)
 
-┌──────────────────────────────────────────────────────────────┐
-│  เตรียมก่อนเริ่ม (ทำครั้งเดียว)                              │
-└──────────────────────────────────────────────────────────────┘
+  1-server/             → WebSocket relay (Render deploy จากโฟลเดอร์นี้)
+     server.js
+     package.json
 
-  □ ติดตั้ง Node.js LTS  → nodejs.org
-  □ ติดตั้ง Git          → git-scm.com
-  □ ติดตั้ง Arduino IDE  → arduino.cc
-  □ สมัคร GitHub         → github.com/signup
-  □ ตั้งค่า Git:
-       git config --global user.name "ชื่อคุณ"
-       git config --global user.email "you@gmail.com"
-  □ สร้าง GitHub Token (เก็บไว้!):
-       GitHub → Settings → Developer settings 
-       → Personal access tokens → Tokens (classic)
-       → Generate new token (classic)
-       → ติ๊ก "repo" → Generate
-       → คัดลอกเก็บไว้ทันที (ออกจากหน้านี้แล้วหายไป!)
+  2-esp32/              → เฟิร์มแวร์ ESP32 (ต้องอัปโหลดเข้าบอร์ดเอง)
+     main_cloud/main_cloud.ino
+
+  3-dashboard/          → สำเนา dashboard สำหรับเก็บเป็นชุดโครงงาน
+     index.html           ⚠️ ไม่ได้ถูก deploy — เป็นสำเนาของ index.html
+                             ที่ root ต้องคัดลอกทับเองทุกครั้งที่แก้
+
+  render.yaml           → ตั้งค่า deploy ของ Render
 
 
 ═══════════════════════════════════════════════════════════════════
-  PART 1 — DEPLOY SERVER บน RAILWAY  (45 นาที)
+  การแก้ไขและ deploy
 ═══════════════════════════════════════════════════════════════════
 
-🎯 จุดมุ่งหมาย: ได้ URL Server ที่เปิดได้ตลอด 24 ชม.
+▸ แก้ Dashboard (เว็บ)
 
+   1. แก้ index.html ที่ root
+   2. คัดลอกทับสำเนา:  cp index.html 3-dashboard/index.html
+   3. git add . && git commit -m "..." && git push
+   4. GitHub Pages อัปเดตเองใน 1–2 นาที → refresh หน้าเว็บ
 
-▸ Step 1.1 — ทดสอบ Server ในเครื่องก่อน
+▸ แก้ Server
 
-   เปิด Command Prompt (Windows) หรือ Terminal (Mac)
+   1. แก้ 1-server/server.js
+   2. git push → Render rebuild เองใน 2–5 นาที
+   3. เช็คว่าขึ้นแล้วโดยเปิด URL Server ดู uptime ว่ารีเซ็ตเป็นเลขน้อย ๆ
 
-   $ cd Desktop                     ← Mac ใช้: cd ~/Desktop
-   $ mkdir exoskeleton-server
-   $ cd exoskeleton-server
+   ทดสอบในเครื่องก่อนได้:
+      cd 1-server && npm install && node server.js
+      เปิด http://localhost:3001 → ต้องได้ JSON {"status":"ok",...}
 
-   เอาไฟล์ 3 ตัวจากโฟลเดอร์ 1-server/ มาวางในนี้:
-     server.js, package.json, .gitignore
+▸ แก้เฟิร์มแวร์ ESP32   ⚠️ ไม่มี auto-deploy ต้องแฟลชเข้าบอร์ดเอง
 
-   $ npm install                    ← รอ 1-2 นาที
-   $ node server.js
+   Library ที่ต้องติดตั้งใน Arduino IDE (เช็คชื่อผู้พัฒนาให้ตรง):
+      ✓ WebSockets   by Markus Sattler     ← ไม่ใช่ตัวอื่น!
+      ✓ ArduinoJson  by Benoit Blanchon
+      ✓ ESP32Servo   by Kevin Harrington
 
-   ✅ ต้องเห็น: [Server] HTTP running on port 3001
+   ก่อน upload ต้องแก้ 2 บรรทัดบนสุดของ main_cloud.ino:
+      const char* WIFI_SSID     = "ชื่อ Hotspot";
+      const char* WIFI_PASSWORD = "รหัสผ่าน";
 
-   เปิด browser → http://localhost:3001
-   ✅ ต้องเห็น: {"status":"ok",...}
+   ⚠️ อย่า commit รหัสผ่านจริงขึ้น GitHub — repo นี้เป็น public
+      ให้เปลี่ยนกลับเป็นข้อความ placeholder ก่อน push ทุกครั้ง
 
-   กด Ctrl+C เพื่อหยุด Server
+   ตั้งค่า Arduino IDE:
+      Board            : ESP32 Dev Module
+      Partition Scheme : Huge APP (3MB No OTA)
+      ถ้าค้างที่ "Connecting..." → กดปุ่ม BOOT บนบอร์ดค้างไว้ตอน upload
 
-
-▸ Step 1.2 — Push ขึ้น GitHub
-
-   ไปที่ github.com → "+" → New repository
-   - ชื่อ: exoskeleton-server
-   - Public  
-   - ⚠️ อย่าติ๊ก "Add README"
-   - กด Create repository
-
-   กลับมา Terminal:
-
-   $ git init
-   $ git add .
-   $ git commit -m "initial server"
-   $ git branch -M main
-   $ git remote add origin https://github.com/USERNAME/exoskeleton-server.git
-        (เปลี่ยน USERNAME เป็นของจริง)
-   $ git push -u origin main
-
-   ถาม Username/Password:
-   - Username: GitHub username
-   - Password: ใส่ Token (ghp_xxx...)
-
-
-▸ Step 1.3 — Deploy บน Railway
-
-   1. ไปที่ railway.app → Login with GitHub
-   2. "+ New Project" → "Deploy from GitHub repo"
-   3. เลือก exoskeleton-server → Deploy
-   4. รอ 2-3 นาที (ดูที่ tab Deployments)
-   5. กดเข้าโปรเจ็ค → Settings → Networking
-   6. กด "Generate Domain"
-   7. ได้ URL เช่น:
-      exoskeleton-server-production-xxxx.up.railway.app
-
-
-▸ Step 1.4 — ทดสอบ
-
-   เปิด browser → URL Railway (ใส่ https:// ข้างหน้า)
-   ✅ ต้องเห็น: {"status":"ok","clients":{"esp32":"disconnected",...}}
-
-📝 จด URL นี้ไว้! → __________________________________________
-                    (ตัวอย่าง: exoskeleton-server-xxx.up.railway.app)
+   เช็คผลที่ Serial Monitor (115200) หลังกด Reset:
+      [WiFi] Connected: 192.168.x.x
+      [WS] Connected to exoskeleton-server.onrender.com/esp32
 
 
 ═══════════════════════════════════════════════════════════════════
-  PART 2 — UPLOAD ESP32 FIRMWARE  (45 นาที)
+  การใช้งาน
 ═══════════════════════════════════════════════════════════════════
 
-🎯 จุดมุ่งหมาย: ESP32 ส่งข้อมูลขึ้น Server ได้ผ่าน Hotspot
-
-
-▸ Step 2.1 — ติดตั้ง Library
-
-   เปิด Arduino IDE
-   → Sketch → Include Library → Manage Libraries
-   ติดตั้งทีละตัว (เช็คชื่อผู้พัฒนาให้ตรง):
-
-   ✓ WebSockets   by Markus Sattler        ← ไม่ใช่ตัวอื่น!
-   ✓ ArduinoJson  by Benoit Blanchon
-   ✓ ESP32Servo   by Kevin Harrington
-
-
-▸ Step 2.2 — แก้โค้ด 3 จุด
-
-   เปิดไฟล์ main_cloud.ino ใน Arduino IDE
-   
-   หาบรรทัดเหล่านี้แล้วแก้:
-
-   const char* WIFI_SSID     = "ชื่อ Hotspot มือถือ";
-   const char* WIFI_PASSWORD = "รหัสผ่าน Hotspot";
-   const char* WS_HOST       = "exoskeleton-server-xxx.up.railway.app";
-                                ↑ ไม่ใส่ https:// ไม่ใส่ / ปิดท้าย
-
-
-▸ Step 2.3 — เปิด Hotspot มือถือ + Upload
-
-   1. เปิด Hotspot มือถือทิ้งไว้
-   2. เสียบ ESP32 เข้าคอม
-   3. Tools → Board → ESP32 Dev Module
-   4. Tools → Port → เลือก COM (หรือ /dev/cu.xxx)
-   5. Tools → Partition Scheme → Huge APP (3MB No OTA)
-   6. กด Upload (→)
-   7. ถ้าค้าง "Connecting..." → กดปุ่ม BOOT บน ESP32 ค้างไว้
-
-
-▸ Step 2.4 — เช็คการเชื่อมต่อ
-
-   เปิด Serial Monitor (Ctrl+Shift+M) → baud 115200
-   กด Reset บน ESP32
-
-   ✅ ต้องเห็น:
-   [WiFi] Connected: 192.168.x.x
-   [WS] Connected to exoskeleton-server-xxx.up.railway.app/esp32
-
-   เปิด URL Railway → Refresh
-   ✅ ต้องเห็น: "esp32":"connected"
+  1. เปิด Hotspot มือถือ (ชื่อและรหัสต้องตรงกับที่แฟลชไว้ในบอร์ด)
+  2. เปิดไฟบอร์ด ESP32 → รอ LED ติด = ต่อ WebSocket สำเร็จ
+  3. เปิด Dashboard ด้วย Chrome
+     ✅ Server: Online (เขียว)
+     ✅ ESP32: Online (เขียว) — ขึ้นภายในไม่กี่วินาทีหลังเปิดบอร์ด
+     ✅ เกจ Servo ขยับตามบอร์ด
+  4. สั่งงานได้ 2 ทาง:
+     • ปุ่ม — "กำทั้งคู่" / "เปิดทั้งคู่" / Grip 50–100% / สไลเดอร์องศา
+     • เสียง — กดไมค์ 🎤 แล้วพูด (ฟังครั้งละ 5 วินาที)
+         "จับ"   = กำนิ้วเข้าจับ
+         "ปล่อย" = คลายนิ้วกลับ
+       ต้องใช้ Chrome และกด Allow ให้ใช้ไมโครโฟน
 
 
 ═══════════════════════════════════════════════════════════════════
-  PART 3 — DEPLOY DASHBOARD บน VERCEL  (30 นาที)
+  แก้ปัญหา
 ═══════════════════════════════════════════════════════════════════
 
-🎯 จุดมุ่งหมาย: ได้ URL Dashboard เปิดจากทุกที่ในโลก
+  เปิด https://exoskeleton-server.onrender.com/ เพื่อดูสถานะจริงก่อนเสมอ
+  จะได้ JSON ประมาณนี้:
+
+     {"status":"ok",
+      "clients":{"esp32":"connected","dashboard":"1 connected"},
+      "esp32LastSeen":"0s ago",     ← ได้ข้อมูลจากบอร์ดล่าสุดเมื่อไหร่
+      "esp32SocketOpen":true,       ← มี socket ค้างอยู่ไหม
+      "uptime":"120s"}
 
 
-▸ Step 3.1 — แก้ Dashboard URL
+  ▸ Dashboard ขึ้น "Server: Offline"
+     Render free tier หลับหลังไม่มีคนใช้ ~15 นาที ตื่นใช้เวลา ~50 วินาที
+     หน้าเว็บจะลองใหม่เองเรื่อย ๆ — รอสักครู่
 
-   เปิดไฟล์ index.html ในโฟลเดอร์ 3-dashboard/
-   ใช้ Notepad หรือ VS Code (ไม่ใช่ Word!)
+  ▸ Dashboard ขึ้น "ESP32: Offline" ทั้งที่เปิดบอร์ดแล้ว
+     1. ดู Serial Monitor ว่าขึ้น [WS] Connected หรือยัง
+        ถ้ามีแค่ [WiFi] Connected → บอร์ดต่อ WiFi ได้แต่ต่อ server ไม่ได้
+     2. เช็คว่า Hotspot เป็น 2.4 GHz (ESP32 ต่อ 5 GHz ไม่ได้)
+     3. ดู esp32LastSeen ใน URL Server — ถ้าเป็น "never" แปลว่าบอร์ด
+        ยังไม่เคยส่งข้อมูลมาเลย
 
-   ค้นหา (Ctrl+F): SERVER_URL
-   แก้บรรทัดนี้:
+  ▸ กดปุ่มแล้วเซอร์โวไม่ขยับ
+     ดูใน log ของ dashboard ว่ามี "ESP32 not connected" ไหม
+     ถ้ามี = server มองไม่เห็นบอร์ด (ดูข้อด้านบน)
+     ถ้าไม่มี = คำสั่งถึงบอร์ดแล้ว ให้เช็คไฟเลี้ยงเซอร์โวกับสายกล
 
-   const SERVER_URL = "wss://exoskeleton-server-xxx.up.railway.app/dashboard";
-                       ↑ wss:// มี s ห้ามลืม!  
-                                                              ↑ ต้องมี /dashboard
-
-
-▸ Step 3.2 — ทดสอบในเครื่องก่อน (สำคัญ!)
-
-   ดับเบิ้ลคลิก index.html → เปิดด้วย Chrome
-   
-   ✅ ต้องเห็น:
-   - มุมขวาบน "Server Connected" (เขียว)
-   - ESP32 "Online" (เขียว)
-   - ค่า FSR/Flex อัปเดต real-time
-   - กดปุ่ม "กำมือ" → Servo หมุน
-
-
-▸ Step 3.3 — Push ขึ้น GitHub
-
-   ไปที่ github.com → New repository
-   - ชื่อ: exoskeleton-dashboard
-   - Public, อย่าติ๊ก Add README
-
-   เปิด Terminal:
-
-   $ cd Desktop                     ← Mac: cd ~/Desktop
-   $ mkdir exoskeleton-dashboard
-   $ cd exoskeleton-dashboard
-   
-   เอาไฟล์ index.html (ที่แก้แล้ว) วางในโฟลเดอร์นี้
-
-   $ git init
-   $ git add .
-   $ git commit -m "initial dashboard"
-   $ git branch -M main
-   $ git remote add origin https://github.com/USERNAME/exoskeleton-dashboard.git
-   $ git push -u origin main
-        (ใส่ Token เป็น password เหมือนเดิม)
-
-
-▸ Step 3.4 — Deploy บน Vercel
-
-   1. ไปที่ vercel.com → Login with GitHub
-   2. Add New → Project
-   3. เลือก exoskeleton-dashboard → Import
-   4. Framework: Other (ไม่ต้องเปลี่ยน)
-   5. กด Deploy → รอ 30-60 วิ
-   6. ได้ URL เช่น: exoskeleton-dashboard.vercel.app
-
-
-▸ Step 3.5 — ทดสอบครบวงจร
-
-   เปิด URL Vercel ใน Chrome (มือถือก็ได้)
-   ✅ Server Connected (เขียว)
-   ✅ ESP32 Online (เขียว)  
-   ✅ ค่า sensor อัปเดต
-   ✅ กดปุ่ม → Servo หมุน
-   ✅ Voice Command ทำงาน (Chrome)
-
-📝 จด URL Dashboard → __________________________________________
+  ▸ สั่งเสียงไม่ทำงาน
+     ต้องใช้ Chrome เท่านั้น (Web Speech API) และต้องกด Allow ไมโครโฟน
+     พูดให้มีคำว่า "จับ" หรือ "ปล่อย" อยู่ในประโยค
+     ถ้าพูดคำอื่น log จะขึ้นว่า "ไม่รู้จักคำสั่ง"
 
 
 ═══════════════════════════════════════════════════════════════════
-  💡 ทุกครั้งที่ใช้งานจริง (หลัง deploy แล้ว)
+  หมายเหตุด้านความปลอดภัย
 ═══════════════════════════════════════════════════════════════════
 
-   1. เปิด Hotspot มือถือ
-   2. เสียบไฟ ESP32 → รอ 10 วิ ให้ connect
-   3. เปิด URL Dashboard บนมือถือ/laptop
-   4. พร้อมใช้งาน!
-
-   ไม่ต้องทำอะไรบนคอมพิวเตอร์อีกเลย
-
-
-═══════════════════════════════════════════════════════════════════
-  🔄 ถ้าต้องแก้โค้ด deploy ใหม่
-═══════════════════════════════════════════════════════════════════
-
-   Server / Dashboard (Railway / Vercel auto-deploy ให้):
-      $ git add .
-      $ git commit -m "อธิบายการแก้"
-      $ git push
-      
-      Railway/Vercel จะ rebuild เองใน 1-3 นาที
-
-   ESP32:
-      แก้ในไฟล์ .ino → กด Upload (→)
-
-
-═══════════════════════════════════════════════════════════════════
-  🚨 ปัญหาที่พบบ่อย — แก้ตรงนี้ทันที
-═══════════════════════════════════════════════════════════════════
-
-  ▸ git push ขึ้น "Authentication failed"
-    → ใส่ Token ผิด (ต้อง ghp_xxx ไม่ใช่ password GitHub)
-
-  ▸ ESP32 ค้าง "Connecting..."
-    → กดปุ่ม BOOT บน ESP32 ค้างไว้ตอน upload
-
-  ▸ ESP32 Serial Monitor เป็นภาษาต่างดาว
-    → baud rate ต้องเป็น 115200
-
-  ▸ ESP32 ไม่ต่อ WiFi
-    → ใช้ WiFi 2.4GHz เท่านั้น (5GHz ใช้ไม่ได้)
-    → เช็คตัวสะกด SSID/Password (case-sensitive)
-
-  ▸ Dashboard "Disconnected" สีแดง
-    → เช็ค SERVER_URL ต้องเป็น wss:// (มี s)
-    → เปิด F12 → Console ดู error
-
-  ▸ Vercel ไม่เห็น Dashboard
-    → ไฟล์ต้องชื่อ "index.html" เท่านั้น
-
-  ▸ Voice Command ไม่ทำงาน
-    → ต้องใช้ Chrome (Safari/Firefox ไม่รองรับเต็มที่)
-    → อนุญาต microphone
-
-
-═══════════════════════════════════════════════════════════════════
-  📋 CHECKLIST ก่อนนำไปแข่ง
-═══════════════════════════════════════════════════════════════════
-
-  Hardware:
-  □ ESP32 + Sensor + Servo ทำงาน
-  □ สาย USB Data 2-3 เส้น  
-  □ Power Bank (10000 mAh+)
-  □ มือถือ Hotspot หลัก + สำรอง
-
-  Software:
-  □ Railway uptime > 1 ชั่วโมง
-  □ Dashboard เปิดได้บนมือถือ
-  □ Voice Command ทำงาน
-
-  เตรียม:
-  □ QR Code พิมพ์ติดอุปกรณ์ (สร้างจาก qr-code-generator.com)
-  □ Demo script ซ้อม 3 รอบขึ้นไป
-  □ ทดสอบนอกบ้านสำเร็จ
-
-
-═══════════════════════════════════════════════════════════════════
-  📞 ลำดับการ Debug
-═══════════════════════════════════════════════════════════════════
-
-  1. เปิด Railway URL → JSON ขึ้นไหม? ถ้าไม่ → Server มีปัญหา
-  2. Serial Monitor ESP32 → [WS] Connected ไหม? ถ้าไม่ → ESP32/WiFi
-  3. Railway URL → "esp32":"connected"? ถ้าไม่ → ESP32 ต่อไม่ถึง
-  4. Dashboard → "Server Connected"? ถ้าไม่ → SERVER_URL ผิด
-  5. ทุกอย่าง connected แต่ไม่มีข้อมูล → กด F12 ดู Console
-
-
-═══════════════════════════════════════════════════════════════════
-
-  🌟 พร้อมใช้งานแล้ว ขอให้โชคดีกับการแข่งครับ!
-
-═══════════════════════════════════════════════════════════════════
+  Server ตัวนี้ไม่มีระบบยืนยันตัวตน ใครที่รู้ URL ก็ต่อเข้ามาสั่งงาน
+  บอร์ดได้ เหมาะกับการใช้สาธิตในชั้นเรียนเท่านั้น
+  ถ้าจะใช้งานจริงกับผู้ป่วย ต้องเพิ่มการยืนยันตัวตน (เช่น token ลับ
+  ที่ทั้งบอร์ดและ dashboard ต้องส่งมาด้วย) ก่อนเสมอ

@@ -2,7 +2,11 @@
  * ============================================================
  *  Exoskeleton WebSocket Server — server.js
  *  Node.js + ws library
- *  Deploy: Railway (ฟรี) → ได้ wss://xxx.railway.app
+ *  Deploy: Render (free) → wss://exoskeleton-server.onrender.com
+ *
+ *  ทำหน้าที่ส่งต่อข้อความอย่างเดียว:
+ *    ESP32 (/esp32) ──sensor_data──→ Dashboard ทุกตัว (/dashboard)
+ *    Dashboard ──command / voice──→ ESP32
  * ============================================================
  */
 
@@ -14,9 +18,8 @@ const app  = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
 
-// ── Health check (Railway ใช้ตรวจสอบว่า server ยังรันอยู่) ──
+// ── Health check + หน้าวินิจฉัย (Render เรียกเช็คว่า server ยังรันอยู่) ──
 app.get("/", (req, res) => {
   res.json({
     status : "ok",
@@ -75,7 +78,16 @@ function broadcastToDashboards(data) {
 // ── WebSocket Connection Handler ──────────────────────────────
 wss.on("connection", (ws, req) => {
   const ip   = req.socket.remoteAddress;
-  const type = req.url === "/esp32" ? "esp32" : "dashboard";
+  // ตัด query string ออกก่อนเทียบ และรับเฉพาะ 2 path ที่รู้จัก
+  // เดิมใช้ "ไม่ใช่ /esp32 = dashboard" ทำให้บอตที่มาสแกนถูกนับเป็น dashboard
+  // และถ้าบอร์ดต่อมาพร้อม query string จะถูกมองเป็น dashboard แล้วข้อมูลหายเงียบ ๆ
+  const path = (req.url || "").split("?")[0];
+  const type = path === "/esp32" ? "esp32" : path === "/dashboard" ? "dashboard" : null;
+  if (!type) {
+    console.log(`[WS] ปฏิเสธการเชื่อมต่อ path "${path}" | IP: ${ip}`);
+    ws.close(1008, "unknown path");
+    return;
+  }
 
   console.log(`[WS] New connection — type: ${type} | IP: ${ip}`);
 
@@ -118,7 +130,9 @@ wss.on("connection", (ws, req) => {
       return;
     }
 
-    console.log(`[WS] ${type} → ${data.type}`);
+    // ไม่ log sensor_data — บอร์ดส่ง 10 ครั้ง/วินาที จะท่วม log ของ Render
+    // (~860,000 บรรทัด/วัน) และเปลืองแรงเครื่องบน free tier
+    if (data.type !== "sensor_data") console.log(`[WS] ${type} → ${data.type}`);
 
     if (type === "esp32") {
       if (ws !== esp32Client) return;   // socket เก่าที่ถูกแทนที่ไปแล้ว
@@ -182,7 +196,9 @@ wss.on("connection", (ws, req) => {
     console.error(`[WS] Error (${type}):`, err.message);
   });
 
-  // ── Ping-Pong keepalive (ป้องกัน Railway ตัด idle connection) ─
+  // ── Ping-Pong keepalive (เก็บกวาด dashboard ที่ปิดไปแบบไม่บอกลา) ─
+  // หมายเหตุ: ใช้ตรวจบอร์ดไม่ได้ เพราะ proxy ของ Render ตอบ pong แทน
+  // การตรวจบอร์ดอยู่ที่ livenessCheck ด้านล่างซึ่งวัดจากข้อมูลจริง
   ws.isAlive = true;
   ws.on("pong", () => { ws.isAlive = true; });
 });

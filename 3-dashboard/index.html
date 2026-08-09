@@ -15,12 +15,10 @@
   --text:     #eef0f4;
   --muted:    #8a8f9c;
   --blue:     #4f8cff;
-  --cyan:     #22d3ee;
   --green:    #34d399;
   --red:      #f87171;
   --yellow:   #fbbf24;
   --purple:   #a78bfa;
-  --pink:     #f472b6;
   --radius:   16px;
 }
 html { scroll-behavior: smooth; }
@@ -66,11 +64,9 @@ body {
 
 /* ── Layout Grid ── */
 .grid { display: grid; gap: 12px; margin-bottom: 12px; }
-.grid-two   { grid-template-columns: 1fr 1fr; }
-.grid-stats { grid-template-columns: repeat(3, 1fr); }
+.grid-two { grid-template-columns: 1fr 1fr; }
 @media (max-width: 760px) {
   .grid-two { grid-template-columns: 1fr; }
-  .grid-stats { grid-template-columns: 1fr; }
 }
 
 /* ── Cards ── */
@@ -100,7 +96,7 @@ body {
 .gauge-box svg { display: block; margin: 0 auto; }
 .gauge-cap  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .gauge-val  { font-size: 20px; font-weight: 600; fill: var(--text); }
-.fsr-readout { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+.lock-readout { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
 .lock-badge {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
@@ -166,7 +162,6 @@ input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
 
 /* ── meta ── */
 .meta-row { display: flex; justify-content: space-between; align-items: center; }
-.rate-tag { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -255,7 +250,7 @@ input[type=range] { flex: 1; accent-color: var(--blue); height: 4px; }
     <div class="card-label" style="margin:0">WebSocket Log</div>
     <button style="font-size:11px;padding:4px 12px" onclick="clearLog()">ล้าง</button>
   </div>
-  <div class="log-box" id="ws-log"><span class="log-sys">// รอการเชื่อมต่อ...</span></div>
+  <div class="log-box" id="ws-log"></div>
 </div>
 
 <script>
@@ -269,24 +264,20 @@ const CH = [
   { name: 'ช่อง 2', servo: '#a78bfa', cls: 'ch1' },
 ];
 
-// ── สร้างการ์ดต่อช่อง (servo gauge + flex gauge + FSR) ────────
+// ── สร้างการ์ดต่อช่อง (เกจ Servo + ป้ายสถานะล็อก) ─────────────
 const ARC_LEN = 235.6; // ความยาวเส้นโค้งครึ่งวงกลม r=75
 document.getElementById('channel-cards').innerHTML = CH.map((c, i) => `
   <div class="card ${c.cls}">
     <div class="ch-title"><span class="tag">${c.name}</span><h2>Servo</h2></div>
-    <div class="gauge-wrap">
-      ${gaugeSVG('servo'+i, c.servo, '0–180°')}
-    </div>
-    <div class="gauge-wrap" style="margin-top:2px">
-      <div class="gauge-cap">Servo (0–180°)</div>
-    </div>
-    <div class="fsr-readout">
+    <div class="gauge-wrap">${gaugeSVG('servo' + i, c.servo)}</div>
+    <div class="gauge-wrap"><div class="gauge-cap">Servo (0–180°)</div></div>
+    <div class="lock-readout">
       <span class="lock-badge lock-off" id="lock${i}">ปลดล็อก</span>
     </div>
   </div>
 `).join('');
 
-function gaugeSVG(id, color, cap) {
+function gaugeSVG(id, color) {
   return `<div class="gauge-box">
     <svg width="150" height="98" viewBox="0 0 200 120">
       <path d="M 25 105 A 75 75 0 0 1 175 105" fill="none"
@@ -341,14 +332,23 @@ setInterval(() => {
 }, 1000);
 
 // ── Log ───────────────────────────────────────────────────────
+// ใช้ textContent ไม่ใช่ innerHTML: ข้อความบางส่วนมาจาก server และจากการถอดเสียง
+// ถ้าเผลอต่อเป็น HTML จะกลายเป็นช่องให้แทรกสคริปต์ได้ และการต่อ innerHTML ซ้ำ ๆ
+// ยังทำให้เบราว์เซอร์ต้องแปลง log ทั้งก้อนใหม่ทุกบรรทัด
+const LOG_MAX_LINES = 200;
 function log(msg, cls = 'log-sys') {
   const el = document.getElementById('ws-log');
   const ts = new Date().toLocaleTimeString('th-TH', { hour12: false });
-  el.innerHTML += `\n<span class="${cls}">[${ts}] ${msg}</span>`;
+  const line = document.createElement('span');
+  line.className = cls;
+  line.textContent = `[${ts}] ${msg}\n`;
+  el.appendChild(line);
+  while (el.childElementCount > LOG_MAX_LINES) el.removeChild(el.firstElementChild);
   el.scrollTop = el.scrollHeight;
 }
 function clearLog() {
-  document.getElementById('ws-log').innerHTML = '<span class="log-sys">// cleared</span>';
+  document.getElementById('ws-log').textContent = '';
+  log('cleared');
 }
 
 // ── Status Pills + ปุ่ม ───────────────────────────────────────
@@ -441,7 +441,6 @@ function handleMessage(data) {
       setGauge('servo' + i, +servo[i] || 0, 180);
       updateLock(i, !!lock[i]);
     }
-    setButtons(true);
   }
   else if (data.type === 'esp32_status') {
     const online = data.status === 'connected';
@@ -458,7 +457,10 @@ function handleMessage(data) {
 
 // ── Send Command ──────────────────────────────────────────────
 function send(data) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    log('ส่งไม่ได้ — ยังไม่ได้เชื่อมต่อ server', 'log-err');
+    return;
+  }
   const msg = JSON.stringify(data);
   ws.send(msg);
   log(`→ ${msg}`, 'log-out');
