@@ -161,14 +161,14 @@ void handleCommand(const String& msg) {
   }
 
   // คำสั่งเสียง — ข้อความถอดเสียงมาจากเบราว์เซอร์แล้ว
-  // "จับ" = ดึงเชือกเส้นงอ (0°) ค้างแรงไว้
-  // "ปล่อย" = ดึงเชือกเส้นเหยียด (180°) คืนตำแหน่ง
+  // ทิศทางต้องตรงกับปุ่มบนแดชบอร์ด: "จับ" = close (180° ล็อก)
+  //                                  "ปล่อย" = open (0° ปลดล็อก)
   else if (strcmp(type, "voice") == 0) {
     String text = doc["text"] | "";
     Serial.println("[VOICE] " + text);
 
-    if (text.indexOf("ปล่อย") >= 0)      moveAll(180, false);
-    else if (text.indexOf("จับ") >= 0)   moveAll(0, true);
+    if (text.indexOf("ปล่อย") >= 0)      moveAll(0, false);
+    else if (text.indexOf("จับ") >= 0)   moveAll(180, true);
   }
 }
 

@@ -490,10 +490,7 @@ function startRecognition() {
       t = e.results[i][0].transcript;
     document.getElementById('voice-text').textContent = `"${t}"`;
 
-    if (e.results[e.resultIndex].isFinal) {
-      send({ type: 'voice', text: t });
-      log(`[เสียง] "${t}"`, 'log-out');
-    }
+    if (e.results[e.resultIndex].isFinal) handleVoiceText(t);
   };
 
   recognition.onerror = (ev) => {
@@ -510,6 +507,21 @@ function startRecognition() {
   };
 
   try { recognition.start(); } catch (e) {}
+}
+
+// แปลงเสียงเป็นคำสั่งเดียวกับปุ่มกด (open/close) ที่นี่เลย
+// จะได้ทิศทางตรงกับปุ่มเสมอ ไม่ต้องพึ่งตัวแปลคำใน ESP32
+function handleVoiceText(t) {
+  log(`[เสียง] "${t}"`, 'log-out');
+  if (t.indexOf('ปล่อย') >= 0) {
+    quickCmd('open');                       // เหมือนกดปุ่ม "เปิดทั้งคู่"
+    log('→ ปล่อย: คลายนิ้วกลับ');
+  } else if (t.indexOf('จับ') >= 0) {
+    quickCmd('close');                      // เหมือนกดปุ่ม "กำทั้งคู่"
+    log('→ จับ: กำนิ้วเข้าจับ');
+  } else {
+    log('ไม่รู้จักคำสั่ง — พูดว่า "จับ" หรือ "ปล่อย"');
+  }
 }
 
 function stopVoice() {
